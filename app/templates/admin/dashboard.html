@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — The Nexus{% endblock %}
+
+{% block body %}
+<header>
+    <h1>The Nexus— Admin Panel</h1>
+    <p>Logged in as: {{ admin.first_name }} {{ admin.last_name }} ({{ admin.role }})</p>
+    <nav>
+        <a href="#" onclick="showTab('stats')">Stats</a> |
+        <a href="#" onclick="showTab('users')">Users</a> |
+        <a href="#" onclick="showTab('stocks')">Stock Prices</a> |
+        <a href="#" onclick="showTab('createAdmin')">Create Admin</a> |
+        <button onclick="doLogout()">Logout</button>
+    </nav>
+</header>
+
+<!-- Stats Tab -->
+<section id="statsTab">
+    <h2>Platform Statistics</h2>
+    <div id="statsContainer"></div>
+</section>
+
+<!-- Users Tab -->
+<section id="usersTab" style="display:none;">
+    <h2>All Users</h2>
+    <input type="text" id="userSearch" placeholder="Search by name or email" oninput="filterUsers()">
+    <div id="usersContainer"></div>
+</section>
+
+<!-- User Detail Modal -->
+<div id="userDetailModal" style="display:none; border:1px solid #000; padding:20px; background:#eee;">
+    <button onclick="document.getElementById('userDetailModal').style.display='none'">Close</button>
+    <div id="userDetailContent"></div>
+</div>
+
+<!-- Stocks Tab -->
+<section id="stocksTab" style="display:none;">
+    <h2>Live Stock Prices — iTick NG Market API</h2>
+    <p>Prices are fetched automatically every 15 minutes from iTick. Manual editing is disabled.</p>
+    <button onclick="refreshStocks()" id="refreshStocksBtn">&#8635; Fetch Latest from iTick Now</button>
+    <p id="stockMsg"></p>
+    <p id="stockLastUpdated" style="font-size:0.9em; color:#555;"></p>
+    <div style="overflow-x:auto;">
+        <table border="1" id="stockTable">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Last Price (&#8358;)</th>
+                    <th>Open (&#8358;)</th>
+                    <th>High (&#8358;)</th>
+                    <th>Low (&#8358;)</th>
+                    <th>Change (&#8358;)</th>
+                    <th>Change %</th>
+                    <th>Volume</th>
+                    <th>Trading Status</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody id="stockTableBody"></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Create Admin Tab -->
+<section id="createAdminTab" style="display:none;">
+    <h2>Create Admin Account</h2>
+    <p>Requires the ADMIN_SECRET_KEY configured in the environment.</p>
+    <div><label>First Name</label><br><input type="text" id="ca_first_name"></div>
+    <div><label>Last Name</label><br><input type="text" id="ca_last_name"></div>
+    <div><label>Email</label><br><input type="email" id="ca_email"></div>
+    <div><label>Phone Number</label><br><input type="tel" id="ca_phone"></div>
+    <div><label>Password</label><br><input type="password" id="ca_password"></div>
+    <div>
+        <label>Role</label><br>
+        <select id="ca_role">
+            <option value="admin">admin</option>
+            <option value="super_admin">super_admin</option>
+        </select>
+    </div>
+    <div><label>Admin Secret Key</label><br><input type="password" id="ca_secret_key"></div>
+    <button onclick="createAdmin()">Create Admin</button>
+    <p id="createAdminMsg"></p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allUsers = [];
+
+function showTab(name) {
+    ['stats','users','stocks','createAdmin'].forEach(t => {
+        document.getElementById(t + 'Tab').style.display = t === name ? '' : 'none';
+    });
+    if (name === 'stats') loadStats();
+    if (name === 'users') loadUsers();
+    if (name === 'stocks') loadStocks();
+}
+
+window.addEventListener('DOMContentLoaded', () => loadStats());
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+    const data = await fetch('/admin/stats', {credentials:'same-origin'}).then(r=>r.json());
+    document.getElementById('statsContainer').innerHTML = `
+        <p>Total Users: <strong>${data.total_users}</strong></p>
+        <p>Verified Users: <strong>${data.verified_users}</strong></p>
+        <p>Total Portfolio Value: <strong>&#8358;${data.total_wallet_value_ngn.toLocaleString()}</strong></p>
+        <p>Total Beneficiaries: <strong>${data.total_beneficiaries}</strong></p>
+        <p>Disbursements Triggered: <strong>${data.triggered_disbursements}</strong></p>
+    `;
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+    const data = await fetch('/admin/users', {credentials:'same-origin'}).then(r=>r.json());
+    allUsers = data.users;
+    renderUsers(allUsers);
+}
+
+function renderUsers(users) {
+    document.getElementById('usersContainer').innerHTML = users.length === 0
+        ? '<p>No users found.</p>'
+        : `<table border="1">
+            <thead><tr>
+                <th>Name</th><th>Email</th><th>Phone</th>
+                <th>KYC</th><th>Status</th><th>Verified</th><th>PIN Set</th><th>Joined</th><th>Actions</th>
+            </tr></thead>
+            <tbody>
+            ${users.map(u => `
+                <tr>
+                    <td>${u.name}</td>
+                    <td>${u.email}</td>
+                    <td>${u.phone_number || '-'}</td>
+                    <td>${u.kyc_status}</td>
+                    <td>${u.account_status}</td>
+                    <td>${u.is_email_verified ? 'Yes' : 'No'}</td>
+                    <td>${u.is_pin_set ? 'Yes' : 'No'}</td>
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="viewUser('${u.id}')">View</button>
+                        ${u.account_status === 'active'
+                            ? `<button onclick="suspendUser('${u.id}')">Suspend</button>`
+                            : `<button onclick="unsuspendUser('${u.id}')">Unsuspend</button>`
+                        }
+                    </td>
+                </tr>
+            `).join('')}
+            </tbody></table>`;
+}
+
+function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+}
+
+async function viewUser(id) {
+    const data = await fetch(`/admin/users/${id}`, {credentials:'same-origin'}).then(r=>r.json());
+    const u = data.user;
+    const w = data.wallet;
+    const c = data.checkin;
+    document.getElementById('userDetailContent').innerHTML = `
+        <h3>${u.name}</h3>
+        <p>Email: ${u.email} | Phone: ${u.phone_number || '-'}</p>
+        <p>Backup Email: ${u.backup_email || 'Not set'} ${u.is_backup_email_verified ? '(Verified)' : ''}</p>
+        <p>Status: ${u.account_status} | KYC: ${u.kyc_status}</p>
+        <p>Paystack Code: ${u.paystack_customer_code || '-'}</p>
+        <hr>
+        ${w ? `<p>Wallet Balance: &#8358;${w.balance.toLocaleString()} | Locked: ${w.is_locked}</p>` : '<p>No wallet</p>'}
+        <hr>
+        <h4>Beneficiaries</h4>
+        ${data.beneficiaries.map(b => `<p>${b.full_name} — ${b.bank_name} ${b.account_number} — ${b.percentage_share}% ${b.is_verified ? '&#10003;' : '&#8987;'}</p>`).join('') || '<p>None</p>'}
+        <hr>
+        <h4>Check-In</h4>
+        ${c ? `<p>Status: ${c.status} | Last: ${new Date(c.last_checkin_date).toLocaleDateString()} | Next due: ${new Date(c.next_due_date).toLocaleDateString()} | Disbursement triggered: ${c.disbursement_triggered}</p>` : '<p>Not set up</p>'}
+        <hr>
+        <h4>Recent Transactions</h4>
+        ${data.recent_transactions.map(t => `<p>${t.type} &#8358;${t.amount.toLocaleString()} — ${t.status} — ${new Date(t.created_at).toLocaleDateString()}</p>`).join('') || '<p>None</p>'}
+    `;
+    document.getElementById('userDetailModal').style.display = '';
+}
+
+async function suspendUser(id) {
+    if (!confirm('Suspend this user?')) return;
+    const res = await apiPost(`/admin/users/${id}/suspend`, {});
+    if (res.ok) loadUsers(); else alert('Failed to suspend');
+}
+
+async function unsuspendUser(id) {
+    const res = await apiPost(`/admin/users/${id}/unsuspend`, {});
+    if (res.ok) loadUsers(); else alert('Failed to unsuspend');
+}
+
+// ── Stocks — read-only, sourced from iTick API ────────────────────────────────
+function fmtN(val, dec=2) {
+    if (val === null || val === undefined) return '—';
+    return Number(val).toLocaleString(undefined, {minimumFractionDigits: dec, maximumFractionDigits: dec});
+}
+
+function tradingLabel(ts) {
+    if (ts === null || ts === undefined) return '—';
+    if (ts === 0) return '&#10003; Normal';
+    if (ts === 1) return '&#9208; Suspended';
+    return `Code ${ts}`;
+}
+
+async function loadStocks() {
+    const data = await fetch('/admin/stocks', {credentials:'same-origin'}).then(r=>r.json());
+
+    document.getElementById('stockTableBody').innerHTML = data.stocks.map(s => {
+        const chColor  = s.change > 0 ? 'green' : s.change < 0 ? 'red' : 'inherit';
+        const chSign   = s.change > 0 ? '+' : '';
+        const updated  = s.updated_at ? new Date(s.updated_at).toLocaleString() : 'Not yet fetched';
+        return `<tr>
+            <td><strong>${s.symbol}</strong></td>
+            <td>${s.name}</td>
+            <td><strong>&#8358;${fmtN(s.current_price)}</strong></td>
+            <td>&#8358;${fmtN(s.open_price)}</td>
+            <td>&#8358;${fmtN(s.high_price)}</td>
+            <td>&#8358;${fmtN(s.low_price)}</td>
+            <td style="color:${chColor}">${chSign}&#8358;${fmtN(s.change)}</td>
+            <td style="color:${chColor}">${chSign}${fmtN(s.change_pct)}%</td>
+            <td>${s.volume !== null && s.volume !== undefined ? Number(s.volume).toLocaleString() : '—'}</td>
+            <td>${tradingLabel(s.trading_status)}</td>
+            <td><small>${updated}</small></td>
+        </tr>`;
+    }).join('');
+
+    if (data.stocks.length > 0 && data.stocks[0].updated_at) {
+        document.getElementById('stockLastUpdated').textContent =
+            `Last data pull: ${new Date(data.stocks[0].updated_at).toLocaleString()} — ${data.note || ''}`;
+    }
+}
+
+async function refreshStocks() {
+    const btn = document.getElementById('refreshStocksBtn');
+    btn.disabled = true;
+    btn.textContent = 'Fetching from iTick...';
+    showMessage('stockMsg', 'Requesting live data from iTick API...');
+    const res = await fetch('/admin/stocks/refresh', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+    });
+    const json = await res.json();
+    if (res.ok) {
+        showMessage('stockMsg', json.message || 'Refreshed successfully');
+        await loadStocks();
+    } else {
+        showMessage('stockMsg', json.detail || 'Refresh failed', true);
+    }
+    btn.disabled = false;
+    btn.textContent = '&#8635; Fetch Latest from iTick Now';
+}
+
+// ── Create Admin ──────────────────────────────────────────────────────────────
+async function createAdmin() {
+    const data = {
+        first_name: document.getElementById('ca_first_name').value.trim(),
+        last_name: document.getElementById('ca_last_name').value.trim(),
+        email: document.getElementById('ca_email').value.trim(),
+        phone_number: document.getElementById('ca_phone').value.trim(),
+        password: document.getElementById('ca_password').value,
+        role: document.getElementById('ca_role').value,
+        admin_secret_key: document.getElementById('ca_secret_key').value,
+    };
+    const res = await apiPost('/admin/create-admin', data);
+    const json = await res.json();
+    if (res.ok) showMessage('createAdminMsg', json.message || 'Admin created');
+    else showMessage('createAdminMsg', json.detail || 'Failed', true);
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────────
+async function doLogout() {
+    await apiPost('/logout', {});
+    window.location.href = '/admin/login';
+}
+</script>
+{% endblock %}

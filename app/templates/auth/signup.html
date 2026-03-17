@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — The Nexus{% endblock %}
+
+{% block body %}
+<h1>The Nexus— Create Account</h1>
+<p>Protect your investments. Ensure your loved ones can claim what is theirs.</p>
+
+<form id="signupForm">
+    <div>
+        <label for="first_name">First Name</label>
+        <input type="text" id="first_name" name="first_name" required>
+    </div>
+    <div>
+        <label for="last_name">Last Name</label>
+        <input type="text" id="last_name" name="last_name" required>
+    </div>
+    <div>
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+    <div>
+        <label for="phone_number">Phone Number</label>
+        <input type="tel" id="phone_number" name="phone_number" placeholder="+2348012345678" required>
+    </div>
+    <div>
+        <label for="password">Password (min 8 characters)</label>
+        <input type="password" id="password" name="password" required minlength="8">
+    </div>
+    <div>
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" required>
+    </div>
+    <button type="submit" id="submitBtn">Create Account</button>
+    <p id="msgBox"></p>
+</form>
+
+<p>Already have an account? <a href="/login">Log in</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Creating account...';
+
+    const data = {
+        first_name: document.getElementById('first_name').value.trim(),
+        last_name: document.getElementById('last_name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone_number: document.getElementById('phone_number').value.trim(),
+        password: document.getElementById('password').value,
+        confirm_password: document.getElementById('confirm_password').value,
+    };
+
+    if (data.password !== data.confirm_password) {
+        showMessage('msgBox', 'Passwords do not match', true);
+        btn.disabled = false; btn.textContent = 'Create Account';
+        return;
+    }
+
+    const res = await apiPost('/signup', data);
+    const json = await res.json();
+
+    if (res.ok) {
+        showMessage('msgBox', json.message || 'Account created! Check your email.');
+        setTimeout(() => {
+            window.location.href = `/verify-email?email=${encodeURIComponent(data.email)}`;
+        }, 2000);
+    } else {
+        showMessage('msgBox', json.detail || 'Registration failed', true);
+        btn.disabled = false; btn.textContent = 'Create Account';
+    }
+});
+</script>
+{% endblock %}

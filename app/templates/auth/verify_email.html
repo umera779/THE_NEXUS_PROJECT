@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Verify Email — The Nexus{% endblock %}
+
+{% block body %}
+<h1>Verify Your Email</h1>
+<p>Enter the 5-digit code we sent to your email address.</p>
+
+<form id="verifyForm">
+    <div>
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+    <div>
+        <label for="code">Verification Code</label>
+        <input type="text" id="code" name="code" maxlength="5" pattern="\d{5}" placeholder="12345" required>
+    </div>
+    <button type="submit" id="submitBtn">Verify Email</button>
+    <p id="msgBox"></p>
+</form>
+
+<p>Back to <a href="/login">Login</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Pre-fill email from URL param
+const params = new URLSearchParams(window.location.search);
+if (params.get('email')) document.getElementById('email').value = params.get('email');
+
+document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+
+    const data = {
+        email: document.getElementById('email').value.trim(),
+        code: document.getElementById('code').value.trim(),
+    };
+
+    const res = await apiPost('/verify-email', data);
+    const json = await res.json();
+
+    if (res.ok) {
+        showMessage('msgBox', json.message || 'Email verified!');
+        setTimeout(() => window.location.href = '/login', 2000);
+    } else {
+        showMessage('msgBox', json.detail || 'Verification failed', true);
+        btn.disabled = false; btn.textContent = 'Verify Email';
+    }
+});
+</script>
+{% endblock %}

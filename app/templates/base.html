@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}The Nexus{% endblock %}</title>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block body %}{% endblock %}
+
+    <script>
+        // Global fetch wrapper with CSRF-safe JSON
+        async function apiPost(url, data) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            });
+            return res;
+        }
+        async function apiDelete(url) {
+            const res = await fetch(url, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+            });
+            return res;
+        }
+        async function apiPut(url, data) {
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            });
+            return res;
+        }
+
+        function showMessage(elId, msg, isError=false) {
+            const el = document.getElementById(elId);
+            if (el) { el.textContent = msg; el.style.color = isError ? 'red' : 'green'; }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
