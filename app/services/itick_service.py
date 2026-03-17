@@ -1,7 +1,4 @@
-"""app/services/itick_service.py
-iTick API wrapper for Nigerian (NG) stock market real-time quotes.
-Fetches prices every 15 minutes and updates the StockPrice table.
-"""
+
 import asyncio
 import logging
 from datetime import datetime, timezone
@@ -13,16 +10,13 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ─── Tracked stocks (up to 5 active, easily expandable) ──────────────────────
-# Set active=True for stocks to fetch from iTick.
-# active=False stocks fall back to DB/seed price.
+
 TRACKED_STOCKS = [
     {"symbol": "DANGCEM",  "name": "Dangote Cement Plc",          "active": True},
     {"symbol": "MTNN",     "name": "MTN Nigeria Comm Plc",         "active": True},
     {"symbol": "GTCO",     "name": "Guaranty Trust Holding Co",    "active": True},
     {"symbol": "ZENITHBANK","name": "Zenith Bank Plc",             "active": True},
     {"symbol": "AIRTELAF", "name": "Airtel Africa Plc",            "active": True},
-    # ── Expand by setting active=True below ──────────────────────────────────
     {"symbol": "ACCESS",   "name": "Access Holdings Plc",          "active": False},
     {"symbol": "UBA",      "name": "United Bank for Africa Plc",   "active": False},
     {"symbol": "BUACEMENT","name": "BUA Cement Plc",               "active": False},

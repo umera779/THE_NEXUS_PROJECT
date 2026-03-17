@@ -1,7 +1,4 @@
-"""app/services/stock_service.py
-Nigerian stock market simulation data.
-Stocks are seeded on startup with editable prices (admin can update them).
-"""
+
 from datetime import datetime, timedelta, timezone
 import random
 

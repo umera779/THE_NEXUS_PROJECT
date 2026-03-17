@@ -1,4 +1,3 @@
-"""app/services/email_service.py"""
 import logging
 from typing import Optional
 
