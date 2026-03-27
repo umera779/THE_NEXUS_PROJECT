@@ -25,9 +25,8 @@ from app.models.schemas import (
     SignupRequest,
     VerifyEmailRequest,
 )
-from app.services import email_service, paystack_service, stock_service
-from app.services.paystack_service import PaystackError
-
+from app.services import stock_service
+from app.services import email_service
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Auth"])
 templates = Jinja2Templates(directory="app/templates")
@@ -56,19 +55,6 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Phone number already registered")
 
     # Create Paystack customer first (fail registration if Paystack fails)
-    try:
-        customer_data = await paystack_service.create_customer(
-            email=payload.email,
-            first_name=payload.first_name,
-            last_name=payload.last_name,
-            phone=payload.phone_number,
-        )
-        customer_code = customer_data.get("customer_code")
-    except PaystackError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Registration failed: could not create payment account. {e.message}",
-        )
 
     # Generate email verification code
     code = generate_otp(5)
@@ -80,7 +66,6 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
         email=payload.email,
         phone_number=payload.phone_number,
         password_hash=hash_password(payload.password),
-        paystack_customer_code=customer_code,
         email_verification_code=code,
         email_verification_expires=expires,
     )
@@ -92,12 +77,6 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
     db.add(wallet)
     await db.flush()
 
-    # Seed dummy portfolio
-    invested = await stock_service.seed_dummy_portfolio(db, user.id, wallet.id)
-    wallet.balance = invested
-    await db.flush()
-
-    # Create default checkin config
     now = datetime.now(timezone.utc)
     checkin = Checkin(
         user_id=user.id,

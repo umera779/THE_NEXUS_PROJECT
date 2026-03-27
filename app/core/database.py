@@ -6,8 +6,8 @@ from app.core.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.APP_ENV == "development",
-    pool_pre_ping=True,
+    echo=False,
+    pool_pre_ping=False,
 )
 
 AsyncSessionLocal = async_sessionmaker(

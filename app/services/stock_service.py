@@ -12,14 +12,8 @@ NIGERIAN_STOCKS = [
     {"symbol": "MTNN",    "name": "MTN Nigeria Comm Plc", "price": 240.00, "sector": "ICT"},
     {"symbol": "AIRTELAF","name": "Airtel Africa Plc", "price": 2200.00, "sector": "ICT"},
     {"symbol": "GTCO",    "name": "Guaranty Trust Holding Co", "price": 58.00, "sector": "Financial Services"},
-    {"symbol": "ZENITHBANK","name": "Zenith Bank Plc", "price": 47.00, "sector": "Financial Services"},
     {"symbol": "ACCESS",  "name": "Access Holdings Plc", "price": 22.00, "sector": "Financial Services"},
     {"symbol": "UBA",     "name": "United Bank for Africa Plc", "price": 28.00, "sector": "Financial Services"},
-    {"symbol": "BUACEMENT","name": "BUA Cement Plc", "price": 115.00, "sector": "Industrial Goods"},
-    {"symbol": "SEPLAT",  "name": "Seplat Energy Plc", "price": 4200.00, "sector": "Oil and Gas"},
-    {"symbol": "NESTLE",  "name": "Nestle Nigeria Plc", "price": 1450.00, "sector": "Consumer Goods"},
-    {"symbol": "FLOURMILL","name": "Flour Mills of Nigeria Plc", "price": 56.00, "sector": "Consumer Goods"},
-    {"symbol": "NB",      "name": "Nigerian Breweries Plc", "price": 32.00, "sector": "Consumer Goods"},
 ]
 
 

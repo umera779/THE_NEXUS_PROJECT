@@ -126,6 +126,8 @@ class AddBeneficiaryRequest(BaseModel):
     account_number: str
     percentage_share: float
     pin: str
+    bank_code: Optional[str] = None      
+    account_name: Optional[str] = None   
 
     @field_validator("percentage_share")
     @classmethod
@@ -228,3 +230,121 @@ class InvestmentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FundWalletRequest(BaseModel):
+    amount_kobo: int
+
+    @field_validator("amount_kobo")
+    @classmethod
+    def amount_must_be_positive(cls, v: int) -> int:
+        if v < 10000:  # minimum ₦100
+            raise ValueError("Minimum funding amount is ₦100 (10 000 kobo)")
+        return v
+
+
+class InitiatePaymentResponse(BaseModel):
+    """
+    Returned by POST /fund/initiate.
+    The front-end passes these values directly to window.webpayCheckout().
+    """
+    txn_ref: str
+    amount_kobo: int
+    merchant_code: str
+    pay_item_id: str
+    customer_email: str
+    mode: str                    # "TEST" | "LIVE"
+    site_redirect_url: str
+    inline_script_url: str       # URL of the ISW inline checkout JS to load
+
+
+# ── Transaction ───────────────────────────────────────────────────────────────
+
+class TransactionOut(BaseModel):
+    id: int
+    txn_ref: str
+    amount_kobo: int
+    status: str
+    confirmed_via: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Webhook ───────────────────────────────────────────────────────────────────
+
+class ISWWebhookData(BaseModel):
+    """
+    Interswitch sends a JSON body on the configured webhook URL.
+    Fields vary slightly between TEST and LIVE; treat everything as optional
+    and rely on server-side requery to confirm payment.
+    """
+    ResponseCode: Optional[str] = None
+    Amount: Optional[int] = None                  # in kobo
+    MerchantReference: Optional[str] = None       # our txn_ref
+    PaymentReference: Optional[str] = None        # ISW's reference
+    RetrievalReferenceNumber: Optional[str] = None
+    TransactionDate: Optional[str] = None
+
+
+class ISWWebhookPayload(BaseModel):
+    """Top-level Interswitch webhook envelope."""
+    event: Optional[str] = None
+    data: Optional[ISWWebhookData] = None
+
+
+
+class BuyStockRequest(BaseModel):
+    """POST /trading/buy"""
+    stock_symbol: str
+    units: float
+    pin: str
+ 
+    @field_validator("units")
+    @classmethod
+    def units_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("Units must be greater than zero")
+        return round(v, 4)
+ 
+    @field_validator("pin")
+    @classmethod
+    def pin_length(cls, v: str) -> str:
+        if len(v) != 6 or not v.isdigit():
+            raise ValueError("PIN must be exactly 6 digits")
+        return v
+ 
+ 
+class SellStockRequest(BaseModel):
+    """POST /trading/sell"""
+    stock_symbol: str
+    units: float
+    pin: str
+ 
+    @field_validator("units")
+    @classmethod
+    def units_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("Units must be greater than zero")
+        return round(v, 4)
+ 
+    @field_validator("pin")
+    @classmethod
+    def pin_length(cls, v: str) -> str:
+        if len(v) != 6 or not v.isdigit():
+            raise ValueError("PIN must be exactly 6 digits")
+        return v
+ 
+ 
+class TradeResponse(BaseModel):
+    """Generic response for buy / sell confirmations."""
+    message: str
+    stock_symbol: str
+    units_bought: float | None = None
+    units_sold: float | None = None
+    price_per_unit: float
+    total_cost: float | None = None
+    proceeds: float | None = None
+    realised_pnl: float | None = None
+    wallet_balance_after: float
+    reference: str

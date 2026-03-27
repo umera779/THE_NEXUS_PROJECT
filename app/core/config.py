@@ -14,15 +14,27 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "insecure-dev-secret-change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ALGORITHM: str = "HS256"
+    BASE_URL: str = "http://localhost:8000"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/legacy_portal"
 
-    # Paystack
-    PAYSTACK_SECRET_KEY: str = ""
-    PAYSTACK_PUBLIC_KEY: str = ""
-    PAYSTACK_BASE_URL: str = "https://api.paystack.co"
-    PAYSTACK_WEBHOOK_SECRET: str = ""
+    # ── Interswitch ───────────────────────────────────────────────────────────
+    ISW_MERCHANT_CODE: str = "MX275932"
+    ISW_PAY_ITEM_ID: str = "Default_Payable_MX275932"
+    ISW_WEBHOOK_SECRET: str = ""
+    ISW_MODE: str = "TEST"          # "TEST" | "LIVE"
+
+    # Requery / verify endpoint base
+    # TEST: https://qa.interswitchng.com
+    # LIVE: https://webpay.interswitchng.com
+    ISW_REQUERY_BASE_URL: str = "https://qa.interswitchng.com"
+
+    # OAuth2 client credentials for server-side ISW calls (transfers, etc.)
+    ISW_CLIENT_ID: str = ""
+    ISW_CLIENT_SECRET: str = ""
+    ISW_TERMINAL_ID: str = "3PBL0001"
+    ISW_INITIATING_ENTITY_CODE: str = "PBL"
 
     # Resend
     RESEND_API_KEY: str = ""
@@ -43,6 +55,13 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    @property
+    def isw_inline_script_url(self) -> str:
+        """URL for the Interswitch Inline Checkout JS widget."""
+        if self.ISW_MODE == "LIVE":
+            return "https://newwebpay.interswitchng.com/inline-checkout.js"
+        return "https://newwebpay.qa.interswitchng.com/inline-checkout.js"
 
 
 @lru_cache

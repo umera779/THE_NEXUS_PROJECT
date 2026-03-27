@@ -16,8 +16,7 @@ from app.models.models import (
     User,
     Wallet,
 )
-from app.services import email_service, paystack_service
-
+from app.services import email_service
 logger = logging.getLogger(__name__)
 
 

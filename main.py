@@ -2,20 +2,15 @@
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
-
-from app.api.routes import admin, auth, dashboard, market
+from app.api.routes import admin, auth, dashboard, market,payment, trading
 from app.core.config import settings
 from app.core.database import engine
 from app.models.models import Base
 from app.services.checkin_service import run_checkin_job
 from app.services.market_service import initialize_snapshot, run_market_refresh
 
-logging.basicConfig(
-    level=logging.DEBUG if not settings.is_production else logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -82,12 +77,27 @@ app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(market.router)
+app.include_router(payment.router)
+app.include_router(trading.router)
+
+
 
 
 @app.get("/")
 async def root():
     return RedirectResponse(url="/login")
 
+
+
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from app.core.dependencies import get_current_user
+ 
+templates = Jinja2Templates(directory="app/templates")
+ 
+@app.get("/trade", response_class=HTMLResponse)
+async def trade_page(request: Request, user = Depends(get_current_user)):
+    return templates.TemplateResponse("trading.html", {"request": request, "user": user})
 
 @app.get("/health")
 async def health():

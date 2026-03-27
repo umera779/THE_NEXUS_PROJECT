@@ -17,13 +17,12 @@ TRACKED_STOCKS = [
     {"symbol": "GTCO",     "name": "Guaranty Trust Holding Co",    "active": True},
     {"symbol": "ZENITHBANK","name": "Zenith Bank Plc",             "active": True},
     {"symbol": "AIRTELAF", "name": "Airtel Africa Plc",            "active": True},
-    {"symbol": "ACCESS",   "name": "Access Holdings Plc",          "active": False},
-    {"symbol": "UBA",      "name": "United Bank for Africa Plc",   "active": False},
-    {"symbol": "BUACEMENT","name": "BUA Cement Plc",               "active": False},
-    {"symbol": "SEPLAT",   "name": "Seplat Energy Plc",            "active": False},
-    {"symbol": "NESTLE",   "name": "Nestle Nigeria Plc",           "active": False},
-    {"symbol": "FLOURMILL","name": "Flour Mills of Nigeria Plc",   "active": False},
-    {"symbol": "NB",       "name": "Nigerian Breweries Plc",       "active": False},
+    {"symbol": "ACCESS",   "name": "Access Holdings Plc",          "active": True},
+    {"symbol": "UBA",      "name": "United Bank for Africa Plc",   "active": True},
+    {"symbol": "FBNH",     "name": "First Bank of Nigeria Hldg",   "active": True},
+    {"symbol": "BUAFOODS", "name": "BUA Foods Plc",               "active": True},
+    {"symbol": "NB",       "name": "Nigerian Breweries Plc",       "active": True},
+    {"symbol": "CADBURY",  "name": "Cadbury Nigeria Plc",         "active": False},  # Inactive example
 ]
 
 ACTIVE_SYMBOLS = [s["symbol"] for s in TRACKED_STOCKS if s["active"]]

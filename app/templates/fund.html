@@ -1,0 +1,114 @@
+
+<h1>Fund Your Wallet</h1>
+
+<p>Enter an amount in Naira to fund your wallet using Interswitch.</p>
+
+<div id="message"></div>
+
+<div>
+    <label for="amount">Amount (&#8358;)</label><br>
+    <input
+        type="number"
+        id="amount"
+        name="amount"
+        min="100"
+        step="50"
+        placeholder="e.g. 500"
+    />
+</div>
+<br>
+<button id="pay-btn" type="button">Pay Now</button>
+
+<br><br>
+<a href="/dashboard">Back to Dashboard</a>
+
+<!--
+    Interswitch Inline Checkout script.
+    The URL is injected from the server so it automatically switches between
+    TEST (qa.interswitchng.com) and LIVE (interswitchng.com) based on ISW_MODE.
+-->
+<script src="{{ inline_script_url }}"></script>
+
+<script>
+    const CUSTOMER_EMAIL = "{{ user.email }}";
+    const BASE_URL       = "{{ base_url }}";
+
+    document.getElementById("pay-btn").addEventListener("click", async function () {
+        const amountNaira = parseFloat(document.getElementById("amount").value);
+
+        if (!amountNaira || amountNaira < 100) {
+            showMessage("Please enter a valid amount (minimum ₦100).", "error");
+            return;
+        }
+
+        const amountKobo = Math.round(amountNaira * 100);
+
+        // Step 1: Create a pending transaction on our server and get the txn_ref
+        let initiateData;
+        try {
+            const resp = await fetch("/fund/initiate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount_kobo: amountKobo }),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                showMessage(err.detail || "Failed to initiate payment.", "error");
+                return;
+            }
+
+            initiateData = await resp.json();
+        } catch (e) {
+            showMessage("Network error. Please try again.", "error");
+            return;
+        }
+
+        // Step 2: Open Interswitch Inline Checkout widget
+        const paymentRequest = {
+            merchant_code:     initiateData.merchant_code,
+            pay_item_id:       initiateData.pay_item_id,
+            txn_ref:           initiateData.txn_ref,
+            amount:            initiateData.amount_kobo,
+            currency:          566,             
+            cust_email:        CUSTOMER_EMAIL,
+            pay_item_name:     "The Nexus — Wallet Funding",
+            site_redirect_url: initiateData.site_redirect_url,
+            mode:              initiateData.mode,
+            onComplete:        paymentCallback,
+        };
+
+        window.webpayCheckout(paymentRequest);
+    });
+
+    /**
+     * Called by the Interswitch widget when the payment flow ends
+     * (success, failure, or dismissal).
+     *
+     * IMPORTANT: Per Interswitch docs, do NOT trust this response to confirm
+     * payment. Our server performs an independent requery on /payment/callback.
+     */
+    function paymentCallback(response) {
+        console.log("ISW callback response:", response);
+
+        const txnRef = response.txnref || response.txn_ref || response.TxnRef;
+        if (txnRef) {
+            // Redirect so the server can requery and confirm
+            const params = new URLSearchParams({
+                txnref: txnRef,
+                amount: response.amount || "",
+            });
+            window.location.href = BASE_URL + "/payment/callback?" + params.toString();
+        } else {
+            // Widget was closed before completing a payment
+            showMessage("Payment was not completed. You can try again.", "info");
+        }
+    }
+
+    function showMessage(msg, type) {
+        const el = document.getElementById("message");
+        el.textContent = msg;
+        el.style.color = type === "error" ? "red" : type === "info" ? "blue" : "green";
+    }
+</script>
+
