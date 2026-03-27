@@ -1,4 +1,4 @@
-"""main.py — The NexusFastAPI Application"""
+"""main.py — Legacy PortalFastAPI Application"""
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler

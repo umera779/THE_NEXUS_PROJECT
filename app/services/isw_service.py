@@ -82,7 +82,7 @@ def build_payment_request(
         "amount": amount_kobo,          # in kobo (lowest denomination)
         "currency": 566,                # NGN ISO 4217 numeric code
         "cust_email": customer_email,
-        "pay_item_name": "The Nexus — Wallet Funding",
+        "pay_item_name": "Legacy Portal — Wallet Funding",
         "site_redirect_url": f"{settings.BASE_URL}/payment/callback",
         "mode": settings.ISW_MODE,
     }
@@ -191,7 +191,7 @@ async def initiate_transfer(
     beneficiary_name: str,
     account_number: str,
     bank_code: str,
-    narration: str = "The Nexus — Inheritance Disbursement",
+    narration: str = "Legacy Portal — Inheritance Disbursement",
     reference: Optional[str] = None,
 ) -> dict:
     """

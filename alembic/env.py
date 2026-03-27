@@ -1,4 +1,4 @@
-"""alembic/env.py — Async Alembic config for The Nexus"""
+"""alembic/env.py — Async Alembic config for Legacy Portal"""
 import asyncio
 from logging.config import fileConfig
 

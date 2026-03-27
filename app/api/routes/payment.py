@@ -1,6 +1,6 @@
 """app/api/routes/payment.py
 
-Interswitch payment routes for The Nexus.
+Interswitch payment routes for Legacy Portal.
 
 Endpoints
 ---------

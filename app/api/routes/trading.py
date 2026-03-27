@@ -1,6 +1,6 @@
 """app/api/routes/trading.py
 
-Stock trading routes for The Nexus.
+Stock trading routes for Legacy Portal.
 Allows users to buy and sell Nigerian stocks at current live prices.
 All trades settle instantly against the user's wallet balance.
 

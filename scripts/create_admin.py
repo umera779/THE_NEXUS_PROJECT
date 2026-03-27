@@ -26,7 +26,7 @@ from sqlalchemy.future import select
 
 
 async def create_admin_user():
-    print("=== The Nexus— Admin User Creation ===\n")
+    print("=== Legacy Portal— Admin User Creation ===\n")
 
     first_name = input("First Name: ").strip()
     last_name = input("Last Name: ").strip()

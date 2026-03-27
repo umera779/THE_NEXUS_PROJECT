@@ -32,7 +32,7 @@ def _send(to: str, subject: str, html: str) -> dict:
 def send_verification_email(email: str, first_name: str, code: str) -> dict:
     return _send(
         email,
-        "Verify Your The NexusAccount",
+        "Verify Your Legacy PortalAccount",
         f"""
         <p>Hi {first_name},</p>
         <p>Use the code below to verify your email address. It expires in 15 minutes.</p>
@@ -46,7 +46,7 @@ def send_verification_email(email: str, first_name: str, code: str) -> dict:
 def send_welcome_email(email: str, first_name: str) -> dict:
     return _send(
         email,
-        "Welcome to The Nexus",
+        "Welcome to Legacy Portal",
         f"""
         <p>Hi {first_name},</p>
         <p>Your account is ready. Log in to set up your beneficiaries and check-in schedule.</p>
@@ -59,7 +59,7 @@ def send_welcome_email(email: str, first_name: str) -> dict:
 def send_password_reset_email(email: str, first_name: str, code: str) -> dict:
     return _send(
         email,
-        "Reset Your The NexusPassword",
+        "Reset Your Legacy PortalPassword",
         f"""
         <p>Hi {first_name},</p>
         <p>Use the code below to reset your password. It expires in 15 minutes.</p>
@@ -73,7 +73,7 @@ def send_password_reset_email(email: str, first_name: str, code: str) -> dict:
 def send_pin_otp_email(email: str, first_name: str, otp: str) -> dict:
     return _send(
         email,
-        "Your The NexusPIN Setup OTP",
+        "Your Legacy PortalPIN Setup OTP",
         f"""
         <p>Hi {first_name},</p>
         <p>Use this OTP to confirm your transaction PIN setup. It expires in 10 minutes.</p>
@@ -86,7 +86,7 @@ def send_pin_otp_email(email: str, first_name: str, otp: str) -> dict:
 def send_backup_email_otp(email: str, first_name: str, otp: str) -> dict:
     return _send(
         email,
-        "Verify Your Backup Email — The Nexus",
+        "Verify Your Backup Email — Legacy Portal",
         f"""
         <p>Hi {first_name},</p>
         <p>Use this OTP to verify your backup email address. It expires in 10 minutes.</p>
@@ -99,7 +99,7 @@ def send_backup_email_otp(email: str, first_name: str, otp: str) -> dict:
 def send_checkin_reminder_email(email: str, first_name: str, days_left: str) -> dict:
     return _send(
         email,
-        "The Nexus — Check-In Reminder",
+        "Legacy Portal — Check-In Reminder",
         f"""
         <p>Hi {first_name},</p>
         <p>Your proof-of-life check-in is due in <strong>{days_left}</strong>.</p>
@@ -118,7 +118,7 @@ def send_disbursement_notification_email(
 ) -> dict:
     return _send(
         email,
-        "The Nexus— Disbursement Initiated",
+        "Legacy Portal— Disbursement Initiated",
         f"""
         <p>A disbursement has been initiated from the your Legacy Portal Account .</p>
         <p>Beneficiary: {beneficiary_name}<br>
@@ -132,7 +132,7 @@ def send_disbursement_notification_email(
 def send_proof_of_life_failed_email(backup_email: str, first_name: str, reset_link: str) -> dict:
     return _send(
         backup_email,
-        "The Nexus— Account Access (Proof-of-Life Not Completed)",
+        "Legacy Portal— Account Access (Proof-of-Life Not Completed)",
         f"""
         <p>Hi {first_name},</p>
         <p>The Legacy Portal Account associated with this backup email did not complete a check-in in time.</p>
