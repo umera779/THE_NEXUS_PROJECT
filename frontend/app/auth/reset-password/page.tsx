@@ -2,8 +2,13 @@
 
 import { AuthForm } from "@/components/auth-form";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function ResetPasswordPage() {
+  useEffect(() => {
+    void api.resetPasswordPage();
+  }, []);
+
   return (
     <main className="auth-screen">
       <AuthForm

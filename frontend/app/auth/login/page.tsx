@@ -3,9 +3,14 @@
 import { useRouter } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    void api.loginPage();
+  }, []);
 
   return (
     <main className="auth-screen">

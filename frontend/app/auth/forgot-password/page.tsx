@@ -2,8 +2,13 @@
 
 import { AuthForm } from "@/components/auth-form";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function ForgotPasswordPage() {
+  useEffect(() => {
+    void api.forgotPasswordPage();
+  }, []);
+
   return (
     <main className="auth-screen">
       <AuthForm

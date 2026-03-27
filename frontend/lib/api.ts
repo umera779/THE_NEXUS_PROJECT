@@ -10,6 +10,7 @@ import type {
   InitiateFundingResponse,
   LoginPayload,
   Market,
+  MarketPricesResponse,
   Portfolio,
   Profile,
   ResetPasswordPayload,
@@ -70,13 +71,41 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
   }
 }
 
+async function requestText(path: string, init?: RequestInit): Promise<ApiResponse<string>> {
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: {
+        ...(init?.headers ?? {}),
+      },
+    });
+
+    if (!response.ok) {
+      const errorPayload = await parseJson<ApiError>(response);
+      return {
+        error: getErrorMessage(errorPayload, `Request failed with status ${response.status}`),
+      };
+    }
+
+    const html = await response.text();
+    return { data: html };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network request failed";
+    return { error: message };
+  }
+}
+
 export const api = {
+  signupPage: () => requestText("/signup"),
   signup: (payload: SignupPayload) =>
     request<{ message: string }>("/signup", { method: "POST", body: JSON.stringify(payload) }),
 
+  verifyEmailPage: () => requestText("/verify-email"),
   verifyEmail: (payload: VerifyEmailPayload) =>
     request<{ message: string }>("/verify-email", { method: "POST", body: JSON.stringify(payload) }),
 
+  loginPage: () => requestText("/login"),
   login: (payload: LoginPayload) =>
     request<{ message: string; is_first_login: boolean; is_pin_set: boolean; role: string }>("/login", {
       method: "POST",
@@ -85,12 +114,15 @@ export const api = {
 
   logout: () => request<{ message: string }>("/logout", { method: "POST" }),
 
+  forgotPasswordPage: () => requestText("/forgot-password"),
   forgotPassword: (payload: ForgotPasswordPayload) =>
     request<{ message: string }>("/forgot-password", { method: "POST", body: JSON.stringify(payload) }),
 
+  resetPasswordPage: () => requestText("/reset-password"),
   resetPassword: (payload: ResetPasswordPayload) =>
     request<{ message: string }>("/reset-password", { method: "POST", body: JSON.stringify(payload) }),
 
+  dashboardPage: () => requestText("/dashboard"),
   profile: () => request<Profile>("/dashboard/profile"),
   balance: () => request<Balance>("/dashboard/balance"),
   wallet: () => request<Wallet>("/dashboard/wallet"),
@@ -100,6 +132,13 @@ export const api = {
   history: () => request<TradeHistory>("/trading/history"),
   checkinStatus: () => request<CheckinStatus>("/dashboard/checkin"),
   beneficiaries: () => request<Beneficiaries>("/dashboard/beneficiaries"),
+  dashboardFundPage: () => requestText("/dashboard/fund"),
+
+  fundPage: () => requestText("/fund"),
+  paymentCallbackPage: (query: string) => requestText(`/payment/callback${query ? `?${query}` : ""}`),
+
+  marketPrices: () => request<MarketPricesResponse>("/market/prices"),
+  marketRefresh: () => request<{ message: string }>("/market/refresh", { method: "POST" }),
 
   requestPinOtp: () => request<{ message: string }>("/dashboard/request-pin-otp", { method: "POST" }),
 

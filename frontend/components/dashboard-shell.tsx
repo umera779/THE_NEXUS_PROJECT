@@ -48,11 +48,13 @@ export function DashboardShell() {
   const [checkinConfig, setCheckinConfig] = useState({ checkin_interval: "00:07:00:00", grace_period: "00:01:00:00", pin: "" });
   const [funding, setFunding] = useState({ amount_naira: "" });
   const [deleteBeneficiaryPin, setDeleteBeneficiaryPin] = useState<Record<string, string>>({});
+  const [marketSnapshotCount, setMarketSnapshotCount] = useState(0);
+  const [sseStatus, setSseStatus] = useState("Not connected");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [profile, wallet, portfolio, market, holdings, history, checkin, beneficiaries] = await Promise.all([
+    const [profile, wallet, portfolio, market, holdings, history, checkin, beneficiaries, dashboardPage] = await Promise.all([
       api.profile(),
       api.wallet(),
       api.portfolio(),
@@ -61,6 +63,7 @@ export function DashboardShell() {
       api.history(),
       api.checkinStatus(),
       api.beneficiaries(),
+      api.dashboardPage(),
     ]);
 
     const firstError = [
@@ -72,6 +75,7 @@ export function DashboardShell() {
       history.error,
       checkin.error,
       beneficiaries.error,
+      dashboardPage.error,
     ].find((item) => typeof item === "string");
 
     if (firstError) {
@@ -89,6 +93,34 @@ export function DashboardShell() {
       beneficiaries: beneficiaries.data ?? null,
     });
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const streamUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"}/market/stream`;
+    const eventSource = new EventSource(streamUrl, { withCredentials: true });
+
+    eventSource.onopen = () => {
+      setSseStatus("Connected");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as { prices?: Record<string, unknown> };
+        if (payload.prices) {
+          setMarketSnapshotCount(Object.keys(payload.prices).length);
+        }
+      } catch {
+        setSseStatus("Connected (non-JSON event)");
+      }
+    };
+
+    eventSource.onerror = () => {
+      setSseStatus("Disconnected");
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -259,6 +291,52 @@ export function DashboardShell() {
     setFunding({ amount_naira: "" });
   }
 
+  async function refreshMarketPrices() {
+    const refreshResult = await api.marketRefresh();
+    if (refreshResult.error) {
+      setActionMessage(refreshResult.error);
+      return;
+    }
+
+    const pricesResult = await api.marketPrices();
+    if (pricesResult.error) {
+      setActionMessage(pricesResult.error);
+      return;
+    }
+
+    const count = Object.keys(pricesResult.data?.prices ?? {}).length;
+    setMarketSnapshotCount(count);
+    setActionMessage(refreshResult.data?.message ?? `Market refreshed (${count} prices loaded)`);
+    await loadAll();
+  }
+
+  async function openBackendFundPage() {
+    const result = await api.fundPage();
+    if (result.error) {
+      setActionMessage(result.error);
+      return;
+    }
+    setActionMessage(`Backend fund page loaded (${result.data?.length ?? 0} chars)`);
+  }
+
+  async function openDashboardFundPage() {
+    const result = await api.dashboardFundPage();
+    if (result.error) {
+      setActionMessage(result.error);
+      return;
+    }
+    setActionMessage(`Dashboard fund page loaded (${result.data?.length ?? 0} chars)`);
+  }
+
+  async function validatePaymentCallbackEndpoint() {
+    const result = await api.paymentCallbackPage("txnref=missing-demo-ref");
+    if (result.error) {
+      setActionMessage(result.error);
+      return;
+    }
+    setActionMessage(`Payment callback GET loaded (${result.data?.length ?? 0} chars)`);
+  }
+
   async function logout() {
     const result = await api.logout();
     setActionMessage(result.error ?? result.data?.message ?? "Logged out");
@@ -399,6 +477,17 @@ export function DashboardShell() {
             />
             <Button type="submit">Initiate Funding</Button>
           </form>
+          <div className="inline-actions">
+            <Button variant="secondary" onClick={() => void openBackendFundPage()}>
+              Fetch GET /fund
+            </Button>
+            <Button variant="ghost" onClick={() => void openDashboardFundPage()}>
+              Fetch GET /dashboard/fund
+            </Button>
+            <Button variant="ghost" onClick={() => void validatePaymentCallbackEndpoint()}>
+              Fetch GET /payment/callback
+            </Button>
+          </div>
         </Card>
 
         <Card title="Check-in" subtitle="Proof-of-life controls">
@@ -554,6 +643,13 @@ export function DashboardShell() {
         </Card>
 
         <Card title="Portfolio Snapshot" subtitle="Investments and market overview">
+          <div className="inline-actions">
+            <Button variant="secondary" onClick={() => void refreshMarketPrices()}>
+              Refresh Market (GET /market/prices)
+            </Button>
+            <span className="meta-chip">SSE: {sseStatus}</span>
+            <span className="meta-chip">Snapshots: {marketSnapshotCount}</span>
+          </div>
           <div className="records">
             {(data.holdings?.holdings ?? []).map((holding) => (
               <article key={holding.id} className="record-row">

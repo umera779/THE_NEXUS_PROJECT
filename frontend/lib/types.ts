@@ -193,3 +193,16 @@ export type InitiateFundingResponse = {
   site_redirect_url: string;
   inline_script_url: string;
 };
+
+export type MarketPricesResponse = {
+  prices: Record<
+    string,
+    {
+      symbol: string;
+      name: string;
+      current_price: number;
+      sector: string;
+      updated_at: string | null;
+    }
+  >;
+};

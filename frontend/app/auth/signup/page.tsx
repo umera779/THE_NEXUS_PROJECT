@@ -2,8 +2,13 @@
 
 import { AuthForm } from "@/components/auth-form";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function SignupPage() {
+  useEffect(() => {
+    void api.signupPage();
+  }, []);
+
   return (
     <main className="auth-screen">
       <AuthForm

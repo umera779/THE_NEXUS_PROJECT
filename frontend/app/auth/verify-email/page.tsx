@@ -2,8 +2,13 @@
 
 import { AuthForm } from "@/components/auth-form";
 import { api } from "@/lib/api";
+import { useEffect } from "react";
 
 export default function VerifyEmailPage() {
+  useEffect(() => {
+    void api.verifyEmailPage();
+  }, []);
+
   return (
     <main className="auth-screen">
       <AuthForm
