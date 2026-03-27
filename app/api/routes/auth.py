@@ -29,8 +29,7 @@ from app.services import stock_service
 from app.services import email_service
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Auth"])
-templates = Jinja2Templates(directory="app/templates")
-
+from app.core.templates import templates
 
 # ─── Signup ───────────────────────────────────────────────────────────────────
 

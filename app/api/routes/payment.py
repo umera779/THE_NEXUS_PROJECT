@@ -47,12 +47,12 @@ router = APIRouter(tags=["payment"])
 from fastapi.requests import Request
 from fastapi.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory="app/templates")
+# templates = Jinja2Templates(directory="app/templates")
+from app.core.templates import templates
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /fund  — serve the Fund Wallet HTML page
 # ─────────────────────────────────────────────────────────────────────────────
 
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/fund", response_class=HTMLResponse)

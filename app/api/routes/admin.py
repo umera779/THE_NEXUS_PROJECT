@@ -14,10 +14,13 @@ from app.core.dependencies import get_current_admin
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.models import Beneficiary, Checkin, Investment, StockPrice, Transaction, User, UserRole, Wallet
 from app.models.schemas import CreateAdminRequest, LoginRequest
+# REPLACE with:
+from app.core.templates import templates
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Admin"], prefix="/admin")
-templates = Jinja2Templates(directory="app/templates")
+# templates = Jinja2Templates(directory="app/templates")
+
 
 
 # ─── Admin Login ──────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-"""main.py — Legacy PortalFastAPI Application"""
+"""main.py — The NexusFastAPI Application"""
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -93,18 +93,15 @@ async def root():
 
 
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from app.core.templates import templates
 from app.core.dependencies import get_current_user
  
-templates = Jinja2Templates(directory="app/templates")
  
+
 @app.get("/trade", response_class=HTMLResponse)
 async def trade_page(request: Request, user = Depends(get_current_user)):
     return templates.TemplateResponse("trading.html", {"request": request, "user": user})
-
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
 
-import asyncio
-asyncio.create_task(run_checkin_job())

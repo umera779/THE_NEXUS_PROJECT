@@ -26,7 +26,10 @@ from app.services.isw_service import ISWError, find_bank_code, resolve_account
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Dashboard"], prefix="/dashboard")
-templates = Jinja2Templates(directory="app/templates")
+# templates = Jinja2Templates(directory="app/templates")
+
+
+from app.core.templates import templates
 
 
 async def _get_user(db: AsyncSession, user_id: str) -> User:
