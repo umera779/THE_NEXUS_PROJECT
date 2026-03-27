@@ -1,4 +1,5 @@
 
+
 <h1>Fund Your Wallet</h1>
 
 <p>Enter an amount in Naira to fund your wallet using Interswitch.</p>
@@ -22,11 +23,7 @@
 <br><br>
 <a href="/dashboard">Back to Dashboard</a>
 
-<!--
-    Interswitch Inline Checkout script.
-    The URL is injected from the server so it automatically switches between
-    TEST (qa.interswitchng.com) and LIVE (interswitchng.com) based on ISW_MODE.
--->
+
 <script src="{{ inline_script_url }}"></script>
 
 <script>
@@ -72,7 +69,7 @@
             amount:            initiateData.amount_kobo,
             currency:          566,             
             cust_email:        CUSTOMER_EMAIL,
-            pay_item_name:     "The Nexus — Wallet Funding",
+            pay_item_name:     "Legacy Portal — Wallet Funding",
             site_redirect_url: initiateData.site_redirect_url,
             mode:              initiateData.mode,
             onComplete:        paymentCallback,

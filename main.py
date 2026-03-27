@@ -45,27 +45,31 @@ async def startup():
     await initialize_snapshot()
 
     # Daily check-in job at 08:00
-    scheduler.add_job(run_checkin_job, "cron", hour=8, minute=0, id="daily_checkin")
-
-    # Market data refresh every N minutes (default 15)
+    # scheduler.add_job(run_checkin_job, "cron", hour=0, minute=1, id="daily_checkin")
+    scheduler.add_job(
+    run_checkin_job, 
+    "interval", 
+    seconds=30, 
+    id="checkin_watchdog"
+)
     scheduler.add_job(
         run_market_refresh,
         "interval",
-        minutes=settings.STOCK_REFRESH_INTERVAL_MINUTES,
+        seconds=30, 
         id="market_refresh",
     )
 
     scheduler.start()
+    
+    # Update logger to reflect the 30-second interval
     logger.info(
-        "Scheduler started — check-in @ 08:00, market refresh every %d min",
-        settings.STOCK_REFRESH_INTERVAL_MINUTES,
+        "Scheduler started — check-in every 30s, market refresh every 30s"
     )
 
     # Kick off one immediate refresh so prices are current on startup
     if settings.ITICK_TOKEN:
         import asyncio
         asyncio.create_task(run_market_refresh())
-
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -102,3 +106,6 @@ async def trade_page(request: Request, user = Depends(get_current_user)):
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
+
+import asyncio
+asyncio.create_task(run_checkin_job())

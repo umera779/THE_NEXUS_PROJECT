@@ -1,3 +1,6 @@
+
+
+
 """app/models/schemas.py"""
 from datetime import datetime
 from typing import Optional
@@ -170,16 +173,55 @@ class DeleteBeneficiaryRequest(BaseModel):
 
 # ─── Checkin ──────────────────────────────────────────────────────────────────
 
+def parse_ddhhmmss(value: str, field_name: str) -> int:
+    """
+    Parse a 'DD:HH:MM:SS' string into a total number of seconds.
+    Relaxed to allow single digits and natural time overflow (e.g., 60s -> 1m).
+    """
+    import re
+    # Relaxed pattern: \d+ allows 1 or more digits for all segments
+    pattern = r"^(\d+):(\d+):(\d+):(\d+)$"
+    m = re.match(pattern, value.strip())
+    if not m:
+        raise ValueError(
+            f"{field_name} must be in DD:HH:MM:SS format (e.g. '00:00:02:30')"
+        )
+        
+    dd, hh, mm, ss = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+    
+    # We removed the strict 'if hh > 23 or mm > 59' check here.
+    # The math below naturally converts 60 seconds into the correct total.
+    total = dd * 86400 + hh * 3600 + mm * 60 + ss
+    
+    if total < 30:
+        raise ValueError(f"{field_name} must be at least 30 seconds")
+    return total
+
+
 class CheckinConfigRequest(BaseModel):
-    checkin_interval_days: int
-    grace_period_days: int
+    """
+    Accept check-in interval and grace period as DD:HH:MM:SS strings.
+    They are converted to total seconds internally.
+    """
+    checkin_interval: str   # DD:HH:MM:SS  e.g. "00:00:01:00" = 60 seconds
+    grace_period: str       # DD:HH:MM:SS  e.g. "00:00:00:30" = 30 seconds
     pin: str
 
-    @field_validator("checkin_interval_days")
+    # Parsed-seconds properties set by the validator below
+    checkin_interval_seconds: int = 0
+    grace_period_seconds: int = 0
+
+    @field_validator("checkin_interval")
     @classmethod
-    def valid_interval(cls, v):
-        if v < 30 or v > 730:
-            raise ValueError("Interval must be between 30 and 730 days")
+    def parse_interval(cls, v):
+        # Store as string; conversion happens in model_validator
+        parse_ddhhmmss(v, "checkin_interval")  # raises on bad format
+        return v
+
+    @field_validator("grace_period")
+    @classmethod
+    def parse_grace(cls, v):
+        parse_ddhhmmss(v, "grace_period")
         return v
 
     @field_validator("pin")
@@ -188,6 +230,12 @@ class CheckinConfigRequest(BaseModel):
         if len(v) != 6 or not v.isdigit():
             raise ValueError("PIN must be 6 digits")
         return v
+
+    def get_interval_seconds(self) -> int:
+        return parse_ddhhmmss(self.checkin_interval, "checkin_interval")
+
+    def get_grace_seconds(self) -> int:
+        return parse_ddhhmmss(self.grace_period, "grace_period")
 
 
 # ─── Admin ────────────────────────────────────────────────────────────────────

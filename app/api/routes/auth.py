@@ -81,9 +81,9 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
     checkin = Checkin(
         user_id=user.id,
         last_checkin_date=now,
-        checkin_interval_days=settings.DEFAULT_CHECKIN_INTERVAL_DAYS,
-        grace_period_days=settings.DEFAULT_GRACE_PERIOD_DAYS,
-        next_due_date=now + timedelta(days=settings.DEFAULT_CHECKIN_INTERVAL_DAYS),
+        checkin_interval_seconds=settings.DEFAULT_CHECKIN_INTERVAL_DAYS,
+        grace_period_seconds=settings.DEFAULT_GRACE_PERIOD_DAYS,
+        next_due_date=now + timedelta(seconds=settings.DEFAULT_CHECKIN_INTERVAL_DAYS),
     )
     db.add(checkin)
     await db.flush()

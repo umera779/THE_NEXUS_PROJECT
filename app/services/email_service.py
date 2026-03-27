@@ -96,15 +96,15 @@ def send_backup_email_otp(email: str, first_name: str, otp: str) -> dict:
     )
 
 
-def send_checkin_reminder_email(email: str, first_name: str, days_left: int) -> dict:
+def send_checkin_reminder_email(email: str, first_name: str, days_left: str) -> dict:
     return _send(
         email,
-        "The Nexus— Check-In Reminder",
+        "The Nexus — Check-In Reminder",
         f"""
         <p>Hi {first_name},</p>
-        <p>Your proof-of-life check-in is due in <strong>{days_left} day(s)</strong>.</p>
+        <p>Your proof-of-life check-in is due in <strong>{days_left}</strong>.</p>
         <p>Please log in to your Legacy Portal Account to confirm you are active to prevent automatic disbursement to your beneficiaries.</p>
-        <p>— Legacy Portal Team<</p>
+        <p>— Legacy Portal Team</p>
         """,
     )
 
