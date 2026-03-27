@@ -5,6 +5,7 @@ asyncpg
 alembic
 pydantic
 pydantic-settings
+starlette
 python-jose[cryptography]
 pydantic[email]
 passlib[bcrypt]

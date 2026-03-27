@@ -1,6 +1,7 @@
-from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader
+from starlette.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory="app/templates")
-
-
-
+templates = Jinja2Templates(env=Environment(
+    loader=FileSystemLoader("app/templates"),
+    auto_reload=True,
+))
