@@ -1,5 +1,3 @@
-
-
 """app/services/checkin_service.py
 APScheduler job that runs frequently (e.g. every 30 seconds):
   - Sends reminder emails when check-in is approaching certain thresholds
@@ -22,11 +20,7 @@ from app.services import disbursement_service, email_service
 
 logger = logging.getLogger(__name__)
 
-# Reminder thresholds expressed in seconds.
-# Each tuple: (lower_bound_seconds, upper_bound_seconds, human_label)
-# A reminder fires when seconds_until_due falls inside the window.
-# The ±60s / ±30s tolerance ensures the job catches the moment even if it
-# doesn't run at exactly the right second.
+
 REMINDER_THRESHOLDS = [
     (2_592_000 - 60, 2_592_000 + 60, "30 days"),   # ~30 days
     (1_209_600 - 60, 1_209_600 + 60, "14 days"),   # ~14 days

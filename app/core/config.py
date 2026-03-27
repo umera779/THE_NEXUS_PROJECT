@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
-    APP_NAME: str = "The Nexus"
+    APP_NAME: str = "Legacy Portal"
     APP_ENV: Literal["development", "production"] = "development"
     SECRET_KEY: str = "insecure-dev-secret-change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://localhost:8000"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/legacy_portal"
+    DATABASE_URL: str
 
     # ── Interswitch ───────────────────────────────────────────────────────────
     ISW_MERCHANT_CODE: str = "MX275932"
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # Resend
     RESEND_API_KEY: str = ""
-    EMAIL_FROM: str = "The Nexus<noreply@example.com>"
+    EMAIL_FROM: str = "Legacy Portal<legacyportal@paytime.online>"
 
     # Admin
     ADMIN_SECRET_KEY: str = "admin-secret"

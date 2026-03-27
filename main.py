@@ -44,8 +44,7 @@ async def startup():
     # Build initial market snapshot from DB
     await initialize_snapshot()
 
-    # Daily check-in job at 08:00
-    # scheduler.add_job(run_checkin_job, "cron", hour=0, minute=1, id="daily_checkin")
+   
     scheduler.add_job(
     run_checkin_job, 
     "interval", 

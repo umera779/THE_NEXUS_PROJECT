@@ -433,35 +433,6 @@ async def get_checkin_status(user: User = Depends(get_current_user), db: AsyncSe
         "disbursement_triggered": checkin.disbursement_triggered,
     }
 
-
-# @router.put("/checkin/config")
-# async def update_checkin_config(payload: CheckinConfigRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-#     u = await _get_user(db, user.id)
-#     if not u.is_pin_set or not u.auth_pin_hash:
-#         raise HTTPException(status_code=400, detail="PIN not set up")
-#     if not verify_pin(payload.pin, u.auth_pin_hash):
-#         raise HTTPException(status_code=401, detail="Incorrect PIN")
-
-    
-#     result = await db.execute(select(Checkin).where(Checkin.user_id == u.id))
-#     checkin = result.scalar_one_or_none()
-#     if not checkin:
-#         raise HTTPException(status_code=404, detail="Check-in record not found")
-#     now = datetime.now(timezone.utc)
-
-#     checkin.last_checkin_date = now
-#     checkin.checkin_interval_seconds = payload.checkin_interval_seconds
-#     checkin.grace_period_seconds = payload.grace_period_seconds
-    
-#     # Recalculate the due date from this exact moment
-#     checkin.next_due_date = now + timedelta(seconds=payload.checkin_interval_seconds)
-    
-#     # Move from PENDING to ACTIVE
-#     checkin.status = CheckinStatus.ACTIVE
-#     checkin.disbursement_triggered = False
-
-#     await db.flush()
-#     return {"message": "Check-in settings updated", "next_due_date": checkin.next_due_date.isoformat()}
 @router.put("/checkin/config")
 async def update_checkin_config(payload: CheckinConfigRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     u = await _get_user(db, user.id)
