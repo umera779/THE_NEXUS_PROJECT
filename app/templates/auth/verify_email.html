@@ -1,52 +1,91 @@
-{% extends "base.html" %}
-{% block title %}Verify Email — Legacy Portal{% endblock %}
-
-{% block body %}
-<h1>Verify Your Email</h1>
-<p>Enter the 5-digit code we sent to your email address.</p>
-
-<form id="verifyForm">
-    <div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email — Legacy Portal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+    :root {
+      --bg: #0d0f12; --surface: #161a1f; --surface2: #1e242b;
+      --border: #2a3140; --accent: #c8a96e; --text: #e8eaf0;
+      --text-muted: #7a8494; --red: #e05c5c; --green: #5cb87a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .wrap { width: 100%; max-width: 420px; padding: 24px; }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .sub { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; }
+    h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 8px; font-weight: 400; }
+    .hint { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;
+      font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    input { background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 11px 14px; border-radius: 7px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; width: 100%; outline: none; transition: border-color .2s; }
+    input:focus { border-color: var(--accent); }
+    input#code { font-size: 22px; letter-spacing: 8px; text-align: center; font-family: 'DM Mono', monospace; }
+    button { background: var(--accent); color: #0d0f12; border: none; padding: 12px;
+      border-radius: 7px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 14px; cursor: pointer; transition: opacity .2s; width: 100%; margin-top: 6px; }
+    button:hover { opacity: .85; } button:disabled { opacity: .45; cursor: not-allowed; }
+    .links { margin-top: 20px; font-size: 13px; color: var(--text-muted); text-align: center; }
+    .links a { color: var(--accent); }
+    .msg { margin-top: 12px; font-size: 13px; min-height: 18px; text-align: center; }
+    .msg.error { color: var(--red); } .msg.ok { color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">Legacy Portal</div>
+    <div class="sub">One last step before you're in.</div>
+    <div class="card">
+      <h2>Verify Your Email</h2>
+      <p class="hint">Enter the 5-digit code we sent to your email address.</p>
+      <div class="form-group">
         <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" required>
-    </div>
-    <div>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
         <label for="code">Verification Code</label>
-        <input type="text" id="code" name="code" maxlength="5" pattern="\d{5}" placeholder="12345" required>
+        <input type="text" id="code" maxlength="5" pattern="\d{5}" placeholder="12345" required>
+      </div>
+      <button id="submitBtn">Verify Email</button>
+      <div id="msgBox" class="msg"></div>
     </div>
-    <button type="submit" id="submitBtn">Verify Email</button>
-    <p id="msgBox"></p>
-</form>
+    <div class="links">
+      Back to <a href="/login">Login</a>
+    </div>
+  </div>
 
-<p>Back to <a href="/login">Login</a></p>
-{% endblock %}
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('email')) document.getElementById('email').value = params.get('email');
 
-{% block scripts %}
-<script>
-// Pre-fill email from URL param
-const params = new URLSearchParams(window.location.search);
-if (params.get('email')) document.getElementById('email').value = params.get('email');
-
-document.getElementById('verifyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true; btn.textContent = 'Verifying...';
-
-    const data = {
+    async function apiPost(url, data) {
+      return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) });
+    }
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('submitBtn');
+      const msgBox = document.getElementById('msgBox');
+      const data = {
         email: document.getElementById('email').value.trim(),
         code: document.getElementById('code').value.trim(),
-    };
-
-    const res = await apiPost('/verify-email', data);
-    const json = await res.json();
-
-    if (res.ok) {
-        showMessage('msgBox', json.message || 'Email verified!');
+      };
+      btn.disabled = true; btn.textContent = 'Verifying…';
+      const res = await apiPost('/verify-email', data);
+      const json = await res.json();
+      if (res.ok) {
+        msgBox.textContent = json.message || 'Email verified!'; msgBox.className = 'msg ok';
         setTimeout(() => window.location.href = '/login', 2000);
-    } else {
-        showMessage('msgBox', json.detail || 'Verification failed', true);
+      } else {
+        msgBox.textContent = json.detail || 'Verification failed'; msgBox.className = 'msg error';
         btn.disabled = false; btn.textContent = 'Verify Email';
-    }
-});
-</script>
-{% endblock %}
+      }
+    });
+  </script>
+</body>
+</html>

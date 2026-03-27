@@ -1,394 +1,476 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legacy Portal — Trading</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade — Legacy Portal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap');
+    :root {
+      --bg: #0d0f12; --surface: #161a1f; --surface2: #1e242b;
+      --border: #2a3140; --accent: #c8a96e; --text: #e8eaf0;
+      --text-muted: #7a8494; --red: #e05c5c; --green: #5cb87a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
+    h1,h2,h3,h4 { font-family: 'DM Serif Display', serif; font-weight: 400; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    input, select { background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 14px; border-radius: 6px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; width: 100%; outline: none; transition: border-color .2s; }
+    input:focus { border-color: var(--accent); }
+    button { background: var(--accent); color: #0d0f12; border: none; padding: 9px 20px;
+      border-radius: 6px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 13px; cursor: pointer; transition: opacity .2s; }
+    button:hover { opacity: .85; } button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+    .msg { font-size: 13px; min-height: 16px; margin-top: 8px; }
+    .msg.error { color: var(--red); } .msg.ok { color: var(--green); }
+
+    /* Layout */
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; align-items: center; justify-content: space-between; height: 58px; position: sticky; top: 0; z-index: 100; }
+    .header-logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); }
+    nav { display: flex; gap: 4px; align-items: center; }
+    nav a { color: var(--text-muted); font-size: 13px; padding: 6px 14px; border-radius: 6px; }
+    nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .logout-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; font-size: 13px; margin-left: 12px; }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+    /* Balance bar */
+    .balance-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .balance-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .balance-amount { font-family: 'DM Mono', monospace; font-size: 22px; color: var(--accent); }
+    .balance-bar .actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+    /* Section header */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 20px; }
+    #refreshBtn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; font-size: 13px; }
+    #refreshBtn:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+
+    /* Table */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; background: var(--surface2); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .gain { color: var(--green); } .loss { color: var(--red); }
+    .mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+    #marketMsg { color: var(--red); font-size: 13px; margin-top: 10px; }
+
+    /* Buy/Sell buttons in table */
+    .trade-btn { padding: 5px 12px; font-size: 12px; border-radius: 5px; }
+    .trade-btn.sell { background: transparent; color: var(--red); border: 1px solid var(--red); }
+    .trade-btn.sell:hover { background: var(--red); color: #fff; opacity: 1; }
+    .trade-btn + .trade-btn { margin-left: 6px; }
+
+    /* Suspended badge */
+    .suspended-badge { font-size: 11px; color: var(--text-muted); padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; }
+
+    /* Modal */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 500; align-items: center; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 100%; max-width: 420px; position: relative; }
+    .modal h3 { font-size: 20px; margin-bottom: 4px; }
+    .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .modal-close { position: absolute; top: 18px; right: 18px; background: transparent; color: var(--text-muted); border: none; font-size: 18px; cursor: pointer; padding: 0; line-height: 1; }
+    .modal-close:hover { color: var(--text); opacity: 1; }
+    .modal-meta { display: flex; gap: 20px; margin-bottom: 18px; }
+    .modal-meta-item { flex: 1; }
+    .modal-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
+    .modal-meta-value { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--accent); }
+    #modalSubmitBtn { width: 100%; padding: 11px; font-size: 14px; margin-top: 4px; }
+    #modalMsg { font-size: 13px; margin-top: 10px; min-height: 16px; }
+  </style>
 </head>
 <body>
 
 <!-- Trade Modal -->
-<div id="tradeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:#fff; padding:24px; width:360px; max-width:90vw;">
-        <button onclick="closeModal()" style="float:right; cursor:pointer;">✕</button>
-        <h3 id="modalTitle">Buy Stock</h3>
-        <p id="modalSubtitle"></p>
-        <div><strong>Price:</strong> <span id="modalPrice">—</span></div>
-        <div style="margin:12px 0;">
-            <label>Units:</label><br>
-            <input type="number" id="modalUnits" step="any" style="width:100%; box-sizing:border-box;">
-        </div>
-        <div><strong id="costLabel">Total cost:</strong> <span id="modalCost">₦0.00</span></div>
-        <div style="margin:12px 0;">
-            <label>Transaction PIN (6 digits):</label><br>
-            <input type="password" id="modalPin" maxlength="6" style="width:100%; box-sizing:border-box;">
-        </div>
-        <button id="modalSubmitBtn" style="margin-top:12px; padding:8px 16px; cursor:pointer;">Confirm</button>
-        <p id="modalMsg" style="margin-top:8px;"></p>
+<div id="tradeModal" class="modal-backdrop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle">Buy Stock</h3>
+    <p class="modal-subtitle" id="modalSubtitle"></p>
+
+    <div class="modal-meta">
+      <div class="modal-meta-item">
+        <div class="modal-meta-label">Price</div>
+        <div class="modal-meta-value" id="modalPrice">—</div>
+      </div>
+      <div class="modal-meta-item">
+        <div class="modal-meta-label" id="costLabel">Total Cost</div>
+        <div class="modal-meta-value" id="modalCost">₦0.00</div>
+      </div>
     </div>
+
+    <div class="form-group">
+      <label for="modalUnits">Units</label>
+      <input type="number" id="modalUnits" step="any" placeholder="0.0000">
+    </div>
+
+    <div class="form-group">
+      <label for="modalPin">Transaction PIN (6 digits)</label>
+      <input type="password" id="modalPin" maxlength="6" placeholder="••••••">
+    </div>
+
+    <button id="modalSubmitBtn">Confirm</button>
+    <p id="modalMsg"></p>
+  </div>
 </div>
 
-<!-- Header / nav -->
 <header>
-    <h1>Legacy Portal — Trade Stocks</h1>
-    <nav>
-        <a href="/dashboard">Dashboard</a> |
-        <button id="refreshBtn" style="cursor:pointer;">↻ Refresh</button>
-    </nav>
+  <div class="header-logo">Legacy Portal</div>
+  <nav>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/fund" style="background:var(--surface2);">Fund Wallet</a>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </nav>
 </header>
 
-<!-- Wallet balance -->
-<div>
-    <strong>Wallet Balance:</strong> <span id="walletBalance">—</span>
-</div>
+<main>
+  <!-- Balance bar -->
+  <div class="balance-bar">
+    <div>
+      <div class="balance-label">Wallet Balance</div>
+      <div class="balance-amount" id="walletBalance">—</div>
+    </div>
+    <div class="actions">
+      <button id="refreshBtn" class="btn-ghost">↻ Refresh</button>
+    </div>
+  </div>
 
-<!-- Market Table -->
-<section>
-    <h2>Market & Holdings</h2>
-    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
-        <thead>
-            <tr>
-                <th>Stock</th>
-                <th>Symbol</th>
-                <th>Current Price (₦)</th>
-                <th>Current Value (₦)</th>
-                <th>Gain/Loss (₦)</th>
-                <th>Owned (units)</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="marketTableBody">
-            <tr><td colspan="7">Loading market data...</td></tr>
-        </tbody>
+  <!-- Market table -->
+  <div class="section-header">
+    <h2>Market &amp; Holdings</h2>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Stock</th>
+          <th>Symbol</th>
+          <th>Price (₦)</th>
+          <th>Current Value (₦)</th>
+          <th>Gain / Loss (₦)</th>
+          <th>Owned (units)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="marketTableBody">
+        <tr><td colspan="7" style="color:var(--text-muted); padding:20px 14px;">Loading market data…</td></tr>
+      </tbody>
     </table>
-    <p id="marketMsg" style="color:red;"></p>
-</section>
+  </div>
+  <p id="marketMsg"></p>
+</main>
 
 <script>
-// State
+// ── State ─────────────────────────────────────────────────────────────────────
 let allStocks = [];
 let walletBalance = 0.0;
 let currentModalStock = null;
 let currentModalMode = 'buy';
 let sseSource = null;
 
-// Helper functions
+// ── Formatters ────────────────────────────────────────────────────────────────
 const formatMoney = (val, decimals = 2) => {
-    if (val === undefined || val === null) return '—';
-    const num = Number(val);
-    if (isNaN(num)) return '—';
-    return '₦' + num.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+  if (val === undefined || val === null) return '—';
+  const num = Number(val);
+  if (isNaN(num)) return '—';
+  return '₦' + num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
 const formatUnits = (u) => {
-    if (u === undefined || u === null) return '—';
-    const num = Number(u);
-    if (isNaN(num)) return '—';
-    return num.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4});
+  if (u === undefined || u === null) return '—';
+  const num = Number(u);
+  if (isNaN(num)) return '—';
+  return num.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 };
 
-// Load wallet balance
+// ── Data loaders ──────────────────────────────────────────────────────────────
 async function loadWalletBalance() {
-    try {
-        const res = await fetch('/dashboard/balance', { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const data = await res.json();
-        walletBalance = Number(data.balance) || 0;
-        document.getElementById('walletBalance').textContent = formatMoney(walletBalance);
-    } catch (err) {
-        console.warn('wallet fetch failed', err);
-    }
+  try {
+    const res = await fetch('/dashboard/balance', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const data = await res.json();
+    walletBalance = Number(data.balance) || 0;
+    document.getElementById('walletBalance').textContent = formatMoney(walletBalance);
+  } catch (err) {
+    console.warn('wallet fetch failed', err);
+  }
 }
 
-// Load market data
 async function loadMarketData() {
-    try {
-        const res = await fetch('/trading/market', { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Failed to fetch market');
-        const data = await res.json();
-        allStocks = data.stocks || [];
-        renderMarketTable();
-        document.getElementById('marketMsg').textContent = '';
-    } catch (err) {
-        document.getElementById('marketMsg').textContent = 'Error loading market data.';
-        console.error(err);
-    }
+  try {
+    const res = await fetch('/trading/market', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('Failed to fetch market');
+    const data = await res.json();
+    allStocks = data.stocks || [];
+    renderMarketTable();
+    document.getElementById('marketMsg').textContent = '';
+  } catch (err) {
+    document.getElementById('marketMsg').textContent = 'Error loading market data.';
+    console.error(err);
+  }
 }
 
-// Render table
+// ── Table renderer ────────────────────────────────────────────────────────────
 function renderMarketTable() {
-    const tbody = document.getElementById('marketTableBody');
-    if (!allStocks.length) {
-        tbody.innerHTML = '<tr><td colspan="7">No stocks available.</td></tr>';
-        return;
+  const tbody = document.getElementById('marketTableBody');
+  if (!allStocks.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:20px 14px;">No stocks available.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  for (const stock of allStocks) {
+    const symbol = stock.symbol;
+    const name = stock.name;
+    const currentPrice = Number(stock.current_price) || 0;
+    const ownedUnits = Number(stock.owned_units) || 0;
+    const avgPrice = stock.avg_purchase_price ? Number(stock.avg_purchase_price) : null;
+
+    const currentValue = ownedUnits * currentPrice;
+    let gainLoss = null;
+    if (ownedUnits > 0 && avgPrice !== null && avgPrice > 0) {
+      gainLoss = (currentPrice - avgPrice) * ownedUnits;
     }
 
-    let html = '';
-    for (const stock of allStocks) {
-        const symbol = stock.symbol;
-        const name = stock.name;
-        const currentPrice = Number(stock.current_price) || 0;
-        const ownedUnits = Number(stock.owned_units) || 0;
-        const avgPrice = stock.avg_purchase_price ? Number(stock.avg_purchase_price) : null;
+    const gainLossClass = gainLoss !== null ? (gainLoss >= 0 ? 'gain' : 'loss') : '';
+    const gainLossText = gainLoss !== null
+      ? (gainLoss >= 0 ? '+' : '−') + formatMoney(Math.abs(gainLoss))
+      : '—';
 
-        const currentValue = ownedUnits * currentPrice;
-        let gainLoss = null;
-        if (ownedUnits > 0 && avgPrice !== null && avgPrice > 0) {
-            gainLoss = (currentPrice - avgPrice) * ownedUnits;
+    const isSuspended = stock.trading_status === 1;
+    const safeName = escapeHtml(name);
+    const safeSymbol = escapeHtml(symbol);
+
+    html += `<tr>
+      <td>${safeName}</td>
+      <td class="mono">${safeSymbol}</td>
+      <td class="mono">${formatMoney(currentPrice)}</td>
+      <td class="mono">${ownedUnits > 0 ? formatMoney(currentValue) : '—'}</td>
+      <td class="mono ${gainLossClass}">${gainLossText}</td>
+      <td class="mono">${ownedUnits > 0 ? formatUnits(ownedUnits) : '—'}</td>
+      <td>
+        ${isSuspended
+          ? '<span class="suspended-badge">Suspended</span>'
+          : `<button class="trade-btn" onclick="openTradeModal('${safeSymbol}', 'buy')">Buy</button>
+             ${ownedUnits > 0 ? `<button class="trade-btn sell" onclick="openTradeModal('${safeSymbol}', 'sell')">Sell</button>` : ''}`
         }
-
-        const gainLossFormatted = (gainLoss !== null) 
-            ? (gainLoss >= 0 ? '+' : '') + formatMoney(Math.abs(gainLoss))
-            : '—';
-        const gainLossColor = (gainLoss !== null) ? (gainLoss >= 0 ? 'green' : 'red') : 'black';
-        const isSuspended = stock.trading_status === 1;
-
-        // Escape for safety
-        const safeName = escapeHtml(name);
-        const safeSymbol = escapeHtml(symbol);
-
-        html += `<tr>
-            <td>${safeName}</td>
-            <td>${safeSymbol}</td>
-            <td>${formatMoney(currentPrice)}</td>
-            <td>${ownedUnits > 0 ? formatMoney(currentValue) : '—'}</td>
-            <td style="color:${gainLossColor};">${gainLossFormatted}</td>
-            <td>${ownedUnits > 0 ? formatUnits(ownedUnits) : '—'}</td>
-            <td>
-                <button onclick="openTradeModal('${safeSymbol}', 'buy')" ${isSuspended ? 'disabled' : ''} style="cursor:pointer;">Buy</button>
-                ${ownedUnits > 0 ? `<button onclick="openTradeModal('${safeSymbol}', 'sell')" ${isSuspended ? 'disabled' : ''} style="cursor:pointer; margin-left:4px;">Sell</button>` : ''}
-            </td>
-        </tr>`;
-    }
-    tbody.innerHTML = html;
+      </td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
 }
 
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-// SSE real-time updates
+// ── SSE real-time prices ───────────────────────────────────────────────────────
 function connectMarketStream() {
-    if (sseSource) {
-        sseSource.close();
-    }
-    sseSource = new EventSource('/market/stream', { withCredentials: true });
+  if (sseSource) sseSource.close();
+  sseSource = new EventSource('/market/stream', { withCredentials: true });
 
-    sseSource.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'price_update' && msg.prices) {
-                let updated = false;
-                for (const [sym, info] of Object.entries(msg.prices)) {
-                    const stock = allStocks.find(s => s.symbol === sym);
-                    if (stock) {
-                        if (info.current_price !== undefined) stock.current_price = info.current_price;
-                        if (info.change !== undefined) stock.change = info.change;
-                        if (info.change_pct !== undefined) stock.change_pct = info.change_pct;
-                        if (info.trading_status !== undefined) stock.trading_status = info.trading_status;
-                        updated = true;
-                    }
-                }
-                if (updated) {
-                    renderMarketTable();
-                }
-            }
-        } catch (e) {
-            console.error('SSE parse error', e);
+  sseSource.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'price_update' && msg.prices) {
+        let updated = false;
+        for (const [sym, info] of Object.entries(msg.prices)) {
+          const stock = allStocks.find(s => s.symbol === sym);
+          if (stock) {
+            if (info.current_price !== undefined) stock.current_price = info.current_price;
+            if (info.change !== undefined) stock.change = info.change;
+            if (info.change_pct !== undefined) stock.change_pct = info.change_pct;
+            if (info.trading_status !== undefined) stock.trading_status = info.trading_status;
+            updated = true;
+          }
         }
-    };
+        if (updated) renderMarketTable();
+      }
+    } catch (e) {
+      console.error('SSE parse error', e);
+    }
+  };
 
-    sseSource.onerror = () => {
-        console.warn('SSE connection lost, reconnecting in 10s');
-        if (sseSource) sseSource.close();
-        setTimeout(connectMarketStream, 10000);
-    };
+  sseSource.onerror = () => {
+    console.warn('SSE connection lost, reconnecting in 10s');
+    if (sseSource) sseSource.close();
+    setTimeout(connectMarketStream, 10000);
+  };
 }
 
-// Modal functions
+// ── Modal ─────────────────────────────────────────────────────────────────────
 function openTradeModal(symbol, mode) {
-    const stock = allStocks.find(s => s.symbol === symbol);
-    if (!stock) {
-        alert('Stock data not loaded yet');
-        return;
-    }
-    
-    currentModalStock = stock;
-    currentModalMode = mode;
-    
-    const isBuy = (mode === 'buy');
-    const price = Number(stock.current_price) || 0;
-    
-    document.getElementById('modalTitle').textContent = isBuy ? `Buy ${symbol}` : `Sell ${symbol}`;
-    document.getElementById('modalSubtitle').textContent = stock.name;
-    document.getElementById('modalPrice').textContent = formatMoney(price);
-    document.getElementById('costLabel').textContent = isBuy ? 'Total cost:' : 'Proceeds:';
-    document.getElementById('modalCost').textContent = formatMoney(0);
-    document.getElementById('modalUnits').value = '';
-    document.getElementById('modalPin').value = '';
-    document.getElementById('modalMsg').textContent = '';
-    document.getElementById('modalMsg').style.color = 'black';
-    
-    const submitBtn = document.getElementById('modalSubmitBtn');
-    submitBtn.textContent = isBuy ? 'Confirm Buy' : 'Confirm Sell';
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-    
-    document.getElementById('tradeModal').style.display = 'flex';
-    document.getElementById('modalUnits').focus();
+  const stock = allStocks.find(s => s.symbol === symbol);
+  if (!stock) { alert('Stock data not loaded yet'); return; }
+
+  currentModalStock = stock;
+  currentModalMode = mode;
+
+  const isBuy = (mode === 'buy');
+  const price = Number(stock.current_price) || 0;
+
+  document.getElementById('modalTitle').textContent = isBuy ? `Buy ${symbol}` : `Sell ${symbol}`;
+  document.getElementById('modalSubtitle').textContent = stock.name;
+  document.getElementById('modalPrice').textContent = formatMoney(price);
+  document.getElementById('costLabel').textContent = isBuy ? 'Total Cost' : 'Proceeds';
+  document.getElementById('modalCost').textContent = formatMoney(0);
+  document.getElementById('modalUnits').value = '';
+  document.getElementById('modalPin').value = '';
+  document.getElementById('modalMsg').textContent = '';
+  document.getElementById('modalMsg').style.color = '';
+
+  const submitBtn = document.getElementById('modalSubmitBtn');
+  submitBtn.textContent = isBuy ? 'Confirm Buy' : 'Confirm Sell';
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = '1';
+
+  document.getElementById('tradeModal').classList.add('open');
+  document.getElementById('modalUnits').focus();
 }
 
 function closeModal() {
-    document.getElementById('tradeModal').style.display = 'none';
-    currentModalStock = null;
-    currentModalMode = 'buy';
+  document.getElementById('tradeModal').classList.remove('open');
+  currentModalStock = null;
+  currentModalMode = 'buy';
 }
 
 function updateModalCost() {
-    if (!currentModalStock) return;
-    const units = parseFloat(document.getElementById('modalUnits').value);
-    if (isNaN(units) || units <= 0) {
-        document.getElementById('modalCost').textContent = formatMoney(0);
-        return;
-    }
-    const price = Number(currentModalStock.current_price) || 0;
-    const amount = units * price;
-    document.getElementById('modalCost').textContent = formatMoney(amount);
+  if (!currentModalStock) return;
+  const units = parseFloat(document.getElementById('modalUnits').value);
+  if (isNaN(units) || units <= 0) {
+    document.getElementById('modalCost').textContent = formatMoney(0);
+    return;
+  }
+  const price = Number(currentModalStock.current_price) || 0;
+  document.getElementById('modalCost').textContent = formatMoney(units * price);
 }
 
 async function submitTrade() {
-    if (!currentModalStock) {
-        alert('No stock selected');
-        return;
+  if (!currentModalStock) { alert('No stock selected'); return; }
+
+  const units = parseFloat(document.getElementById('modalUnits').value);
+  const pin = document.getElementById('modalPin').value.trim();
+  const msgEl = document.getElementById('modalMsg');
+  const btn = document.getElementById('modalSubmitBtn');
+
+  if (isNaN(units) || units <= 0) {
+    msgEl.textContent = 'Please enter a valid number of units.';
+    msgEl.style.color = 'var(--red)';
+    return;
+  }
+
+  if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    msgEl.textContent = 'PIN must be exactly 6 digits.';
+    msgEl.style.color = 'var(--red)';
+    return;
+  }
+
+  if (currentModalMode === 'sell') {
+    const owned = Number(currentModalStock.owned_units) || 0;
+    if (units > owned + 0.0001) {
+      msgEl.textContent = `You only own ${formatUnits(owned)} units of ${currentModalStock.symbol}.`;
+      msgEl.style.color = 'var(--red)';
+      return;
     }
-    
-    const units = parseFloat(document.getElementById('modalUnits').value);
-    const pin = document.getElementById('modalPin').value.trim();
-    const msgEl = document.getElementById('modalMsg');
-    const btn = document.getElementById('modalSubmitBtn');
-    
-    // Validation
-    if (isNaN(units) || units <= 0) {
-        msgEl.textContent = 'Please enter a valid number of units.';
-        msgEl.style.color = 'red';
-        return;
+  }
+
+  if (currentModalMode === 'buy') {
+    const price = Number(currentModalStock.current_price) || 0;
+    const totalCost = units * price;
+    if (totalCost > walletBalance) {
+      msgEl.textContent = `Insufficient funds. Need ${formatMoney(totalCost)}, have ${formatMoney(walletBalance)}.`;
+      msgEl.style.color = 'var(--red)';
+      return;
     }
-    
-    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-        msgEl.textContent = 'PIN must be exactly 6 digits.';
-        msgEl.style.color = 'red';
-        return;
+  }
+
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  msgEl.textContent = 'Processing…';
+  msgEl.style.color = 'var(--text-muted)';
+
+  const endpoint = currentModalMode === 'buy' ? '/trading/buy' : '/trading/sell';
+  const payload = {
+    stock_symbol: currentModalStock.symbol,
+    units: units,
+    pin: pin
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+      msgEl.style.color = 'var(--green)';
+      msgEl.textContent = json.message || 'Success!';
+      await loadWalletBalance();
+      await loadMarketData();
+      setTimeout(() => closeModal(), 1500);
+    } else {
+      msgEl.style.color = 'var(--red)';
+      msgEl.textContent = json.detail || 'Transaction failed. Please try again.';
+      btn.disabled = false;
+      btn.style.opacity = '1';
     }
-    
-    // Sell validation
-    if (currentModalMode === 'sell') {
-        const owned = Number(currentModalStock.owned_units) || 0;
-        if (units > owned + 0.0001) {
-            msgEl.textContent = `You only own ${formatUnits(owned)} units of ${currentModalStock.symbol}.`;
-            msgEl.style.color = 'red';
-            return;
-        }
-    }
-    
-    // Buy validation - check wallet balance
-    if (currentModalMode === 'buy') {
-        const price = Number(currentModalStock.current_price) || 0;
-        const totalCost = units * price;
-        if (totalCost > walletBalance) {
-            msgEl.textContent = `Insufficient funds. Need ${formatMoney(totalCost)}, have ${formatMoney(walletBalance)}.`;
-            msgEl.style.color = 'red';
-            return;
-        }
-    }
-    
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-    msgEl.textContent = 'Processing...';
-    msgEl.style.color = 'black';
-    
-    const endpoint = currentModalMode === 'buy' ? '/trading/buy' : '/trading/sell';
-    const payload = {
-        stock_symbol: currentModalStock.symbol,
-        units: units,
-        pin: pin
-    };
-    
-    try {
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const json = await res.json();
-        
-        if (res.ok) {
-            msgEl.style.color = 'green';
-            msgEl.textContent = json.message || 'Success!';
-            
-            // Refresh data after successful trade
-            await loadWalletBalance();
-            await loadMarketData();
-            
-            // Close modal after short delay
-            setTimeout(() => {
-                closeModal();
-            }, 1500);
-        } else {
-            msgEl.style.color = 'red';
-            msgEl.textContent = json.detail || 'Transaction failed. Please try again.';
-            btn.disabled = false;
-            btn.style.opacity = '1';
-        }
-    } catch (err) {
-        console.error('Trade error:', err);
-        msgEl.style.color = 'red';
-        msgEl.textContent = 'Network error — please check your connection.';
-        btn.disabled = false;
-        btn.style.opacity = '1';
-    }
+  } catch (err) {
+    console.error('Trade error:', err);
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = 'Network error — please check your connection.';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
 }
 
 async function manualRefresh() {
-    document.getElementById('marketMsg').textContent = 'Refreshing...';
-    await loadWalletBalance();
-    await loadMarketData();
-    document.getElementById('marketMsg').textContent = '';
+  document.getElementById('marketMsg').textContent = 'Refreshing…';
+  await loadWalletBalance();
+  await loadMarketData();
+  document.getElementById('marketMsg').textContent = '';
 }
 
-// Close modal on backdrop click
-document.getElementById('tradeModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
+async function doLogout() {
+  await fetch('/logout', { method: 'POST', credentials: 'same-origin' });
+  window.location.href = '/login';
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+document.getElementById('tradeModal').addEventListener('click', function (e) {
+  if (e.target === this) closeModal();
 });
 
-// Escape key closes modal
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeModal();
 });
 
-// Update cost preview when units change
 document.getElementById('modalUnits').addEventListener('input', updateModalCost);
-
-// Submit button click handler
 document.getElementById('modalSubmitBtn').onclick = submitTrade;
+document.getElementById('refreshBtn').addEventListener('click', manualRefresh);
 
-// Initialize
+// ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-    await loadWalletBalance();
-    await loadMarketData();
-    connectMarketStream();
-    
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', manualRefresh);
-    }
+  await loadWalletBalance();
+  await loadMarketData();
+  connectMarketStream();
 });
 </script>
 </body>

@@ -48,13 +48,13 @@ async def startup():
     scheduler.add_job(
     run_checkin_job, 
     "interval", 
-    seconds=30, 
+    seconds=120, 
     id="checkin_watchdog"
 )
     scheduler.add_job(
         run_market_refresh,
         "interval",
-        seconds=30, 
+        seconds=300, 
         id="market_refresh",
     )
 
