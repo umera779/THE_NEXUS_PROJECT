@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -19,7 +18,6 @@ from app.core.templates import templates
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Admin"], prefix="/admin")
-# templates = Jinja2Templates(directory="app/templates")
 
 
 
@@ -28,7 +26,6 @@ router = APIRouter(tags=["Admin"], prefix="/admin")
 @router.get("/login", response_class=HTMLResponse)
 async def admin_login_page(request: Request):
     return templates.TemplateResponse("admin/login.html", {"request": request})
-
 
 @router.post("/login")
 async def admin_login(

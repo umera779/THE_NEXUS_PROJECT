@@ -24,7 +24,6 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,7 +46,6 @@ router = APIRouter(tags=["payment"])
 from fastapi.requests import Request
 from fastapi.templating import Jinja2Templates
 
-# templates = Jinja2Templates(directory="app/templates")
 from app.core.templates import templates
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /fund  — serve the Fund Wallet HTML page

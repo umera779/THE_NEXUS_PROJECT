@@ -2,6 +2,8 @@
 
 A digital will and inheritance platform for Nigerian investment apps built with FastAPI. This platform allows users to manage investment portfolios, trade stocks, and secure their assets with automatic disbursement to beneficiaries upon proof-of-life failure.
 
+Link to project: https://legacyportal.onrender.com
+
 ## Features
 
 - **Authentication**: Signup with email verification (5-digit OTP), login with JWT cookie, password reset, role-based access.

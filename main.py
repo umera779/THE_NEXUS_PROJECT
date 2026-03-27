@@ -105,3 +105,11 @@ async def trade_page(request: Request, user = Depends(get_current_user)):
 async def health():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
 
+
+
+# # Replace the /trade route in main.py with this:
+# @app.get("/trade", response_class=HTMLResponse)
+# async def trade_page(request: Request, user = Depends(get_current_user)):
+#     html = open("app/templates/trading.html").read()
+#     return HTMLResponse(content=html)
+

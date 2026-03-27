@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from app.core.templates import templates
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -26,10 +26,7 @@ from app.services.isw_service import ISWError, find_bank_code, resolve_account
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Dashboard"], prefix="/dashboard")
-# templates = Jinja2Templates(directory="app/templates")
 
-
-from app.core.templates import templates
 
 
 async def _get_user(db: AsyncSession, user_id: str) -> User:
