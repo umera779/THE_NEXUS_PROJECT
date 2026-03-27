@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from fastapi.responses import FileResponse
+import os
 from app.core.templates import templates
-
+from app.core.dependencies import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -27,6 +29,11 @@ from app.services.isw_service import ISWError, find_bank_code, resolve_account
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Dashboard"], prefix="/dashboard")
 
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "templates")
+ 
+def _html(filename: str) -> FileResponse:
+    path = os.path.join(TEMPLATES_DIR, filename)
+    return FileResponse(path, media_type="text/html")
 
 
 async def _get_user(db: AsyncSession, user_id: str) -> User:
@@ -37,9 +44,9 @@ async def _get_user(db: AsyncSession, user_id: str) -> User:
 
 # ─── Main Dashboard ───────────────────────────────────────────────────────────
 
-@router.get("", response_class=HTMLResponse)
-async def dashboard(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return templates.TemplateResponse("dashboard/index.html", {"request": request, "user": user})
+@router.get("", response_class=FileResponse)
+async def dashboard(user: User = Depends(get_current_user)):
+    return _html("dashboard/index.html")
 
 
 @router.get("/portfolio")

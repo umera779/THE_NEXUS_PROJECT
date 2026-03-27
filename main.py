@@ -92,24 +92,19 @@ async def root():
 
 
 
-from fastapi.responses import HTMLResponse
-from app.core.templates import templates
+import os
+from fastapi.responses import FileResponse
 from app.core.dependencies import get_current_user
  
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "app", "templates")
  
+@app.get("/trade", response_class=FileResponse)
+async def trade_page(user=Depends(get_current_user)):
+    return FileResponse(os.path.join(TEMPLATES_DIR, "trading.html"), media_type="text/html")
 
-@app.get("/trade", response_class=HTMLResponse)
-async def trade_page(request: Request, user = Depends(get_current_user)):
-    return templates.TemplateResponse("trading.html", {"request": request, "user": user})
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
-
-
-
-# # Replace the /trade route in main.py with this:
-# @app.get("/trade", response_class=HTMLResponse)
-# async def trade_page(request: Request, user = Depends(get_current_user)):
-#     html = open("app/templates/trading.html").read()
-#     return HTMLResponse(content=html)
 

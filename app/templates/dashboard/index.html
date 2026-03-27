@@ -1,888 +1,708 @@
-{% extends "base.html" %}
-{% block title %}Dashboard — Legacy Portal{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Legacy Portal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap');
+    :root {
+      --bg: #0d0f12; --surface: #161a1f; --surface2: #1e242b;
+      --border: #2a3140; --accent: #c8a96e; --text: #e8eaf0;
+      --text-muted: #7a8494; --red: #e05c5c; --green: #5cb87a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
+    h1,h2,h3,h4 { font-family: 'DM Serif Display', serif; font-weight: 400; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    input, select { background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 14px; border-radius: 6px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; width: 100%; outline: none; transition: border-color .2s; }
+    input:focus { border-color: var(--accent); }
+    button { background: var(--accent); color: #0d0f12; border: none; padding: 9px 20px;
+      border-radius: 6px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 13px; cursor: pointer; transition: opacity .2s; }
+    button:hover { opacity: .85; } button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+    .msg { font-size: 13px; min-height: 16px; margin-top: 8px; }
+    .msg.error { color: var(--red); } .msg.ok { color: var(--green); }
 
-{% block body %}
-<header>
-    <h1>Legacy Portal</h1>
-    <nav>
-        <a href="#" onclick="showSection('portfolio')">Portfolio</a> |
-        <a href="#" onclick="showSection('beneficiaries')">Beneficiaries</a> |
-        <a href="#" onclick="showSection('checkin')">Check-In</a> |
-        <a href="#" onclick="showSection('settings')">Settings</a> |
-        <a href="/fund">Fund Wallet</a> |
-        <a href="/trade">Buy stock</a>
-        <button onclick="doLogout()">Logout</button>
-    </nav>
-</header>
+    /* Layout */
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; align-items: center; justify-content: space-between; height: 58px; position: sticky; top: 0; z-index: 100; }
+    .header-logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); }
+    nav { display: flex; gap: 4px; align-items: center; }
+    nav button { background: transparent; color: var(--text-muted); border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+    nav button:hover, nav button.active { background: var(--surface2); color: var(--text); opacity: 1; }
+    nav button.active { color: var(--accent); }
+    .logout-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; font-size: 13px; margin-left: 12px; }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+    section { display: none; }
+    section.active { display: block; }
+
+    /* Balance bar */
+    .balance-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .balance-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .balance-amount { font-family: 'DM Mono', monospace; font-size: 22px; color: var(--accent); }
+    .balance-bar .links { margin-left: auto; display: flex; gap: 10px; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .gain { color: var(--green); } .loss { color: var(--red); }
+
+    /* Modal */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 500; align-items: center; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 100%; max-width: 440px; }
+    .modal h3 { font-size: 18px; margin-bottom: 18px; }
+    .modal-close { float: right; background: transparent; color: var(--text-muted); border: none; font-size: 18px; cursor: pointer; padding: 0; margin-left: 8px; }
+    .modal-close:hover { color: var(--text); opacity: 1; }
+
+    /* Checkin */
+    .countdown { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 400; color: var(--accent); letter-spacing: 2px; margin: 12px 0 4px; }
+    .countdown.warn { color: orange; } .countdown.danger { color: var(--red); }
+
+    /* Bene confirm card */
+    .confirm-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .confirm-card p { font-size: 13px; margin: 3px 0; }
+    .confirm-card strong { color: var(--accent); }
+
+    /* Settings */
+    .slot-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 14px; }
+    .slot-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+    .verified-badge { color: var(--green); font-size: 13px; }
+    .pending-badge { color: orange; font-size: 13px; }
+    .locked-msg { color: var(--text-muted); font-size: 13px; }
+  </style>
+</head>
+<body>
 
 <!-- PIN Setup Modal -->
-<div id="pinSetupModal" style="display:none; border:2px solid black; padding:20px; background:#fff; position:fixed; top:50px; left:50%; transform:translateX(-50%); z-index:999; width:400px;">
-    <h2>Set Up Your Transaction PIN</h2>
-    <p>A 6-digit PIN is required before you can add beneficiaries or backup emails. An OTP will be sent to your email to confirm.</p>
-    <button onclick="requestPinOtp()" id="sendOtpBtn">Send OTP to My Email</button>
-    <p id="pinOtpMsg"></p>
-
-    <div id="pinFormDiv" style="display:none; margin-top:10px;">
-        <div>
-            <label>OTP from Email</label><br>
-            <input type="text" id="pinOtp" maxlength="6" placeholder="6-digit OTP">
-        </div>
-        <div>
-            <label>New 6-digit PIN</label><br>
-            <input type="password" id="newPin" maxlength="6" placeholder="______">
-        </div>
-        <div>
-            <label>Confirm PIN</label><br>
-            <input type="password" id="confirmPin" maxlength="6" placeholder="______">
-        </div>
-        <button onclick="submitPin()">Set PIN</button>
-        <p id="pinSetMsg"></p>
+<div id="pinSetupModal" class="modal-backdrop">
+  <div class="modal">
+    <h3>Set Up Your Transaction PIN</h3>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">A 6-digit PIN is required before you can add beneficiaries or backup emails. An OTP will be sent to your email to confirm.</p>
+    <button id="sendOtpBtn" onclick="requestPinOtp()">Send OTP to My Email</button>
+    <div id="pinOtpMsg" class="msg"></div>
+    <div id="pinFormDiv" style="display:none;margin-top:16px;">
+      <div class="form-group">
+        <label>OTP from Email</label>
+        <input type="text" id="pinOtp" maxlength="6" placeholder="6-digit OTP">
+      </div>
+      <div class="form-group">
+        <label>New 6-digit PIN</label>
+        <input type="password" id="newPin" maxlength="6" placeholder="••••••">
+      </div>
+      <div class="form-group">
+        <label>Confirm PIN</label>
+        <input type="password" id="confirmPin" maxlength="6" placeholder="••••••">
+      </div>
+      <button onclick="submitPin()">Set PIN</button>
+      <div id="pinSetMsg" class="msg"></div>
     </div>
+  </div>
 </div>
 
-<!-- Portfolio Section -->
-<section id="portfolioSection">
-    <h2>My Investment Portfolio</h2>
-    <h2>
-    Wallet Balance:
-    <span id="balanceCurrency">₦</span>
-    <span id="balance">0.00</span>
-</h2>
-    <div id="portfolioSummary"></div>
-    <table id="portfolioTable" border="1">
-        <thead>
-            <tr>
-                <th>Stock</th><th>Symbol</th><th>Units</th>
-                <th>Purchase Price</th><th>Current Price</th>
-                <th>Current Value</th><th>Gain/Loss</th><th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="portfolioBody"></tbody>
-    </table>
-    <p id="portfolioMsg"></p>
-</section>
+<header>
+  <div class="header-logo">Legacy Portal</div>
+  <nav>
+    <button class="active" onclick="showSection('portfolio',this)">Portfolio</button>
+    <button onclick="showSection('beneficiaries',this)">Beneficiaries</button>
+    <button onclick="showSection('checkin',this)">Check-In</button>
+    <button onclick="showSection('settings',this)">Settings</button>
+    <a href="/fund" style="color:var(--text-muted);font-size:13px;padding:6px 14px;border-radius:6px;background:var(--surface2);">Fund Wallet</a>
+    <a href="/trade" style="color:var(--text-muted);font-size:13px;padding:6px 14px;border-radius:6px;background:var(--surface2);">Trade</a>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </nav>
+</header>
 
-<!-- Beneficiaries Section -->
-<section id="beneficiariesSection" style="display:none;">
-    <h2>Beneficiaries</h2>
-    <p>These people will receive your investments if proof-of-life check-in fails.</p>
-    <p><strong>Total allocated: <span id="totalPct">0</span>%</strong> (must add up to 100%)</p>
-
-    <div id="beneficiaryList"></div>
-
-    <h3>Add Beneficiary</h3>
-
-    <!-- Step 1: Account details (no PIN yet) -->
-    <div id="beneStep1">
-        <p>Enter the beneficiary's bank account details. We will verify the account name before you confirm with your PIN.</p>
-        <div>
-            <label>Bank Name</label><br>
-            <input type="text" id="beneBankName" placeholder="e.g. GTBank, Zenith, Access">
-        </div>
-        <div>
-            <label>Account Number</label><br>
-            <input type="text" id="beneAccNumber" maxlength="10" placeholder="10-digit account number">
-        </div>
-        <div>
-            <label>Percentage Share (%)</label><br>
-            <input type="number" id="benePct" min="1" max="100" step="0.01">
-        </div>
-        <button id="beneResolveBtn" onclick="resolveBeneficiaryAccount()">Look Up Account</button>
-        <p id="beneMsgBox"></p>
-    </div>
-
-    <!-- Step 2: Confirmation card + PIN (shown after successful resolve) -->
-    <div id="beneStep2" style="display:none;">
-        <div id="beneConfirmCard" style="border:1px solid #ccc; padding:16px; margin:12px 0; background:#f9f9f9;">
-            <p style="margin:0 0 6px;"><strong>Account verified ✓</strong></p>
-            <p style="margin:0;">Name: <strong id="beneConfirmName">—</strong></p>
-            <p style="margin:0;">Bank: <strong id="beneConfirmBank">—</strong></p>
-            <p style="margin:0;">Account: <strong id="beneConfirmAcct">—</strong></p>
-        </div>
-        <p>Is this the right person? Enter your 6-digit PIN to confirm and save.</p>
-        <div>
-            <label>Your 6-digit PIN</label><br>
-            <input type="password" id="benePin" maxlength="6" placeholder="______">
-        </div>
-        <button id="beneConfirmBtn" onclick="confirmAddBeneficiary()">Confirm &amp; Save Beneficiary</button>
-        <button onclick="cancelBeneResolve()" style="margin-left:8px;">Cancel</button>
-        <p id="beneConfirmMsg"></p>
-    </div>
-</section>
-
-<!-- Check-in Section -->
-<section id="checkinSection" style="display:none;">
-    <h2>Proof-of-Life Check-In</h2>
-    <p>Regular check-ins confirm you are alive and prevent automatic disbursement.</p>
-    <div id="checkinStatus"></div>
-
-    <div id="countdownBox">
-        <p>Time until next check-in due:</p>
-        <p id="countdownTimer" style="font-size:1.4em; font-weight:bold; letter-spacing:2px;">—</p>
-        <p id="countdownLabel"></p>
-    </div>
-
-    <button onclick="doCheckin()" id="checkinBtn">I Am Here — Check In Now</button>
-    <p id="checkinMsg"></p>
-
-    <h3>Update Check-In Settings</h3>
-    <p><small>Enter durations in <strong>DD:HH:MM:SS</strong> format — e.g. <code>00:00:01:00</code> = 1 minute, <code>01:00:00:00</code> = 1 day. Minimum: <code>00:00:00:30</code> (30 seconds).</small></p>
+<main>
+  <!-- Balance Bar -->
+  <div class="balance-bar">
     <div>
-        <label>Check-in interval (DD:HH:MM:SS)</label><br>
-        <input type="text" id="checkinInterval" value="180:00:00:00" maxlength="15"
-       placeholder="DD:HH:MM:SS" pattern="\d+:\d+:\d+:\d+"
-               style="font-family:monospace; letter-spacing:1px; width:160px;">
-        <small>How often you need to check in</small>
+      <div class="balance-label">Wallet Balance</div>
+      <div class="balance-amount"><span id="balanceCurrency">₦</span><span id="balance">—</span></div>
     </div>
-    <div style="margin-top:8px;">
-        <label>Grace period (DD:HH:MM:SS)</label><br>
-        <input type="text" id="gracePeriod" value="30:00:00:00" maxlength="15"
-       placeholder="DD:HH:MM:SS" pattern="\d+:\d+:\d+:\d+
-               style="font-family:monospace; letter-spacing:1px; width:160px;">
-        <small>Extra time after missed check-in before disbursement triggers</small>
+  </div>
+
+  <!-- Portfolio Section -->
+  <section id="portfolioSection" class="active">
+    <h2 style="margin-bottom:18px;">My Investment Portfolio</h2>
+    <div id="portfolioSummary" style="margin-bottom:18px;"></div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table>
+        <thead>
+          <tr>
+            <th>Stock</th><th>Symbol</th><th>Units</th>
+            <th>Purchase Price</th><th>Current Price</th>
+            <th>Current Value</th><th>Gain / Loss</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"><tr><td colspan="8" style="color:var(--text-muted);padding:24px;">Loading…</td></tr></tbody>
+      </table>
     </div>
-    <div style="margin-top:8px;">
-        <label>Your 6-digit PIN to confirm</label><br>
-        <input type="password" id="checkinSettingsPin" maxlength="6" placeholder="______">
+    <div id="portfolioMsg" class="msg error"></div>
+  </section>
+
+  <!-- Beneficiaries Section -->
+  <section id="beneficiariesSection">
+    <h2 style="margin-bottom:6px;">Beneficiaries</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;">These people will receive your investments if proof-of-life check-in fails.</p>
+    <p style="margin-bottom:20px;font-size:14px;">Total allocated: <strong id="totalPct" style="color:var(--accent);">0</strong>% <span style="color:var(--text-muted);font-size:13px;">(must add up to 100%)</span></p>
+    <div id="beneficiaryList" style="margin-bottom:24px;"></div>
+
+    <div class="card">
+      <h3 style="margin-bottom:16px;">Add Beneficiary</h3>
+      <!-- Step 1 -->
+      <div id="beneStep1">
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">We will verify the account name before you confirm with your PIN.</p>
+        <div class="form-group"><label>Bank Name</label><input type="text" id="beneBankName" placeholder="e.g. GTBank, Zenith, Access"></div>
+        <div class="form-group"><label>Account Number</label><input type="text" id="beneAccNumber" maxlength="10" placeholder="10-digit account number"></div>
+        <div class="form-group"><label>Percentage Share (%)</label><input type="number" id="benePct" min="1" max="100" step="0.01"></div>
+        <button id="beneResolveBtn" onclick="resolveBeneficiaryAccount()">Look Up Account</button>
+        <div id="beneMsgBox" class="msg"></div>
+      </div>
+      <!-- Step 2 -->
+      <div id="beneStep2" style="display:none;">
+        <div class="confirm-card">
+          <p><strong>Account verified ✓</strong></p>
+          <p>Name: <strong id="beneConfirmName">—</strong></p>
+          <p>Bank: <strong id="beneConfirmBank">—</strong></p>
+          <p>Account: <strong id="beneConfirmAcct">—</strong></p>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Is this the right person? Enter your 6-digit PIN to confirm and save.</p>
+        <div class="form-group"><label>Your 6-digit PIN</label><input type="password" id="benePin" maxlength="6" placeholder="••••••"></div>
+        <div style="display:flex;gap:10px;">
+          <button id="beneConfirmBtn" onclick="confirmAddBeneficiary()">Confirm &amp; Save</button>
+          <button class="btn-ghost" onclick="cancelBeneResolve()">Cancel</button>
+        </div>
+        <div id="beneConfirmMsg" class="msg"></div>
+      </div>
     </div>
-    <button onclick="updateCheckinConfig()">Save Settings</button>
-    <p id="checkinConfigMsg"></p>
-</section>
+  </section>
 
-<!-- Settings Section -->
-<section id="settingsSection" style="display:none;">
-    <h2>Account Settings</h2>
+  <!-- Check-in Section -->
+  <section id="checkinSection">
+    <h2 style="margin-bottom:6px;">Proof-of-Life Check-In</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">Regular check-ins confirm you are alive and prevent automatic disbursement.</p>
 
-    <h3>Backup Emails</h3>
-    <p>Up to 2 backup emails allowed. If proof-of-life fails, these become active for password reset. Each email must be unique and different from your primary email.</p>
+    <div class="card" style="margin-bottom:18px;">
+      <div id="checkinStatus"></div>
+      <div style="margin:16px 0 8px;">
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Time until next check-in due</div>
+        <div id="countdownTimer" class="countdown">—</div>
+        <div id="countdownLabel" style="font-size:13px;color:var(--text-muted);"></div>
+      </div>
+      <button onclick="doCheckin()" id="checkinBtn" style="margin-top:8px;">I Am Here — Check In Now</button>
+      <div id="checkinMsg" class="msg"></div>
+    </div>
 
-    <!-- Slot 1 -->
-    <div id="slot1Section">
+    <div class="card">
+      <h3 style="margin-bottom:8px;">Update Check-In Settings</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Durations in <strong>DD:HH:MM:SS</strong> format — e.g. <code style="color:var(--accent);">01:00:00:00</code> = 1 day. Minimum: <code style="color:var(--accent);">00:00:00:30</code>.</p>
+      <div class="form-group">
+        <label>Check-in interval (DD:HH:MM:SS)</label>
+        <input type="text" id="checkinInterval" value="180:00:00:00" maxlength="15" placeholder="DD:HH:MM:SS" pattern="\d+:\d+:\d+:\d+" style="font-family:'DM Mono',monospace;">
+      </div>
+      <div class="form-group">
+        <label>Grace period (DD:HH:MM:SS)</label>
+        <input type="text" id="gracePeriod" value="30:00:00:00" maxlength="15" placeholder="DD:HH:MM:SS" pattern="\d+:\d+:\d+:\d+" style="font-family:'DM Mono',monospace;">
+      </div>
+      <div class="form-group">
+        <label>Your 6-digit PIN to confirm</label>
+        <input type="password" id="checkinSettingsPin" maxlength="6" placeholder="••••••">
+      </div>
+      <button onclick="updateCheckinConfig()">Save Settings</button>
+      <div id="checkinConfigMsg" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- Settings Section -->
+  <section id="settingsSection">
+    <h2 style="margin-bottom:20px;">Account Settings</h2>
+    <div class="card">
+      <h3 style="margin-bottom:6px;">Backup Emails</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">Up to 2 backup emails. If proof-of-life fails, these become active for password reset.</p>
+
+      <!-- Slot 1 -->
+      <div class="slot-card" id="slot1Section">
         <h4>Backup Email — Slot 1</h4>
         <div id="slot1Status"></div>
         <div id="slot1AddForm">
+          <div style="display:flex;gap:10px;margin-top:10px;">
             <input type="email" id="backupEmail1" placeholder="backup1@example.com">
-            <button onclick="setBackupEmail(1)">Save &amp; Send OTP</button>
+            <button onclick="setBackupEmail(1)" style="white-space:nowrap;width:auto;">Save &amp; Send OTP</button>
+          </div>
         </div>
-        <div id="slot1OtpSection" style="display:none;">
-            <p>Enter the OTP sent to your backup email and your PIN to confirm.</p>
-            <div>
-                <label>OTP</label><br>
-                <input type="text" id="backupOtp1" maxlength="6">
-            </div>
-            <div>
-                <label>Your 6-digit PIN</label><br>
-                <input type="password" id="backupVerifyPin1" maxlength="6">
-            </div>
-            <button onclick="verifyBackupEmail(1)">Verify &amp; Confirm</button>
+        <div id="slot1OtpSection" style="display:none;margin-top:12px;">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Enter the OTP sent to your backup email and your PIN to confirm.</p>
+          <div class="form-group"><label>OTP</label><input type="text" id="backupOtp1" maxlength="6"></div>
+          <div class="form-group"><label>Your 6-digit PIN</label><input type="password" id="backupVerifyPin1" maxlength="6"></div>
+          <button onclick="verifyBackupEmail(1)">Verify &amp; Confirm</button>
         </div>
-        <p id="backupMsg1"></p>
-    </div>
+        <div id="backupMsg1" class="msg"></div>
+      </div>
 
-    <hr>
+      <hr style="border-color:var(--border);margin:4px 0 14px;">
 
-    <!-- Slot 2 -->
-    <div id="slot2Section">
+      <!-- Slot 2 -->
+      <div class="slot-card" id="slot2Section">
         <h4>Backup Email — Slot 2</h4>
-        <p id="slot2Locked" style="color:grey;">Complete slot 1 first to unlock slot 2.</p>
+        <p id="slot2Locked" class="locked-msg">Complete slot 1 first to unlock slot 2.</p>
         <div id="slot2Content" style="display:none;">
-            <div id="slot2Status"></div>
-            <div id="slot2AddForm">
-                <input type="email" id="backupEmail2" placeholder="backup2@example.com">
-                <button onclick="setBackupEmail(2)">Save &amp; Send OTP</button>
+          <div id="slot2Status"></div>
+          <div id="slot2AddForm">
+            <div style="display:flex;gap:10px;margin-top:10px;">
+              <input type="email" id="backupEmail2" placeholder="backup2@example.com">
+              <button onclick="setBackupEmail(2)" style="white-space:nowrap;width:auto;">Save &amp; Send OTP</button>
             </div>
-            <div id="slot2OtpSection" style="display:none;">
-                <p>Enter the OTP sent to your backup email and your PIN to confirm.</p>
-                <div>
-                    <label>OTP</label><br>
-                    <input type="text" id="backupOtp2" maxlength="6">
-                </div>
-                <div>
-                    <label>Your 6-digit PIN</label><br>
-                    <input type="password" id="backupVerifyPin2" maxlength="6">
-                </div>
-                <button onclick="verifyBackupEmail(2)">Verify &amp; Confirm</button>
-            </div>
-            <p id="backupMsg2"></p>
+          </div>
+          <div id="slot2OtpSection" style="display:none;margin-top:12px;">
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Enter the OTP sent to your backup email and your PIN to confirm.</p>
+            <div class="form-group"><label>OTP</label><input type="text" id="backupOtp2" maxlength="6"></div>
+            <div class="form-group"><label>Your 6-digit PIN</label><input type="password" id="backupVerifyPin2" maxlength="6"></div>
+            <button onclick="verifyBackupEmail(2)">Verify &amp; Confirm</button>
+          </div>
+          <div id="backupMsg2" class="msg"></div>
         </div>
+      </div>
     </div>
-</section>
+  </section>
+</main>
 
-<footer>
-    <p>Legacy Portal&copy; 2026. Your legacy, protected.</p>
+<footer style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px;border-top:1px solid var(--border);margin-top:40px;">
+  Legacy Portal &copy; 2026. Your legacy, protected.
 </footer>
-{% endblock %}
 
-{% block scripts %}
 <script>
-// ── On load: always check profile from server ─────────────────────────────────
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function apiPost(url, data) {
+  return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) });
+}
+async function apiDelete(url, data) {
+  return fetch(url, { method:'DELETE', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: data ? JSON.stringify(data) : undefined });
+}
+async function apiPut(url, data) {
+  return fetch(url, { method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) });
+}
+function showMessage(elId, msg, isError=false) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'msg ' + (isError ? 'error' : 'ok');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-    await checkPinSetup();
-    loadBalance();
-    loadPortfolio();
-    connectMarketStream();
+  await checkPinSetup();
+  loadBalance();
+  loadPortfolio();
+  connectMarketStream();
 });
 
 function loadBalance() {
-    fetch('/dashboard/balance', {credentials: 'same-origin'})
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('balance').textContent =
-                Number(data.balance || 0).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-        })
-        .catch(e => console.error('Failed to load balance', e));
+  fetch('/dashboard/balance', {credentials:'same-origin'})
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('balance').textContent =
+        Number(data.balance || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    })
+    .catch(e => console.error('Failed to load balance', e));
 }
 
 async function checkPinSetup() {
-    try {
-        const res = await fetch('/dashboard/profile', {credentials: 'same-origin'});
-        if (!res.ok) { window.location.href = '/login'; return; }
-        const profile = await res.json();
-        // Show PIN modal only if pin is genuinely not set in DB
-        if (!profile.is_pin_set) {
-            document.getElementById('pinSetupModal').style.display = 'block';
-        }
-    } catch(e) {
-        console.error('Profile check failed', e);
+  try {
+    const res = await fetch('/dashboard/profile', {credentials:'same-origin'});
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const profile = await res.json();
+    if (!profile.is_pin_set) {
+      document.getElementById('pinSetupModal').classList.add('open');
     }
+  } catch(e) { console.error('Profile check failed', e); }
 }
 
-function showSection(name) {
-    ['portfolio','beneficiaries','checkin','settings'].forEach(s => {
-        document.getElementById(s + 'Section').style.display = s === name ? '' : 'none';
-    });
-    if (name === 'portfolio') loadPortfolio();
-    if (name === 'beneficiaries') loadBeneficiaries();
-    if (name === 'checkin') loadCheckin();
-    if (name === 'settings') loadSettings();
+function showSection(name, btn) {
+  ['portfolio','beneficiaries','checkin','settings'].forEach(s => {
+    document.getElementById(s + 'Section').classList.toggle('active', s === name);
+  });
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (name === 'portfolio') loadPortfolio();
+  if (name === 'beneficiaries') loadBeneficiaries();
+  if (name === 'checkin') loadCheckin();
+  if (name === 'settings') loadSettings();
 }
 
 // ── Portfolio ─────────────────────────────────────────────────────────────────
+let portfolioData = [], priceMap = {}, sseSource = null;
+const REFRESH_MINUTES = 15;
+
 async function loadPortfolio() {
-    const data = await fetch('/dashboard/portfolio', {credentials:'same-origin'}).then(r=>r.json());
-    portfolioData = data.portfolio;  // cache for live updates
-    updatePortfolioWithLivePrices(); // render immediately with whatever prices we have
+  const data = await fetch('/dashboard/portfolio', {credentials:'same-origin'}).then(r=>r.json());
+  portfolioData = data.portfolio;
+  updatePortfolioWithLivePrices();
 }
 
-// ── Real-time market prices via SSE ──────────────────────────────────────────
-let portfolioData = [];   // cached portfolio from last load
-let priceMap = {};        // latest prices from SSE {SYMBOL: current_price}
-let sseSource = null;
-
 function connectMarketStream() {
-    if (sseSource) sseSource.close();
-    sseSource = new EventSource('/market/stream', {withCredentials: true});
-
-    sseSource.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'price_update' && msg.prices) {
-                priceMap = {};
-                for (const [sym, info] of Object.entries(msg.prices)) {
-                    priceMap[sym] = info.current_price;
-                }
-                updatePortfolioWithLivePrices();
-            }
-        } catch(e) { console.error('SSE parse error', e); }
-    };
-
-    sseSource.onerror = () => {
-        // Auto-reconnect after 10s on error
-        sseSource.close();
-        setTimeout(connectMarketStream, 10000);
-    };
+  if (sseSource) sseSource.close();
+  sseSource = new EventSource('/market/stream', {withCredentials:true});
+  sseSource.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'price_update' && msg.prices) {
+        priceMap = {};
+        for (const [sym, info] of Object.entries(msg.prices)) priceMap[sym] = info.current_price;
+        updatePortfolioWithLivePrices();
+      }
+    } catch(e) { console.error('SSE parse error', e); }
+  };
+  sseSource.onerror = () => { sseSource.close(); setTimeout(connectMarketStream, 10000); };
 }
 
 function updatePortfolioWithLivePrices() {
-    if (!portfolioData.length) return;
-
-    let totalValue = 0, totalInvested = 0;
-    const rows = portfolioData.map(p => {
-        const livePrice = priceMap[p.stock_symbol] ?? p.current_price;
-        const currentValue = p.units * livePrice;
-        const gainLoss = currentValue - p.principal_amount;
-        const gainLossPct = p.principal_amount ? (gainLoss / p.principal_amount) * 100 : 0;
-        totalValue += currentValue;
-        totalInvested += p.principal_amount;
-        return `<tr>
-            <td>${p.stock_name}</td><td>${p.stock_symbol}</td>
-            <td>${p.units.toLocaleString()}</td>
-            <td>₦${p.purchase_price.toLocaleString()}</td>
-            <td>₦${livePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-            <td>₦${currentValue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-            <td style="color:${gainLoss >= 0 ? 'green' : 'red'}">
-                ${gainLoss >= 0 ? '+' : ''}₦${Math.abs(gainLoss).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-                (${gainLossPct >= 0 ? '+' : ''}${gainLossPct.toFixed(2)}%)
-            </td>
-            <td>${p.status}</td>
-        </tr>`;
-    });
-
-    document.getElementById('portfolioBody').innerHTML = rows.join('');
-
-    const totalGain = totalValue - totalInvested;
-    const totalGainPct = totalInvested ? (totalGain / totalInvested) * 100 : 0;
-    document.getElementById('portfolioSummary').innerHTML = `
-        <p>Total Invested: ₦${totalInvested.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
-        <p>Current Value: ₦${totalValue.toLocaleString(undefined, {minimumFractionDigits:2})}</p>
-        <p style="color:${totalGain >= 0 ? 'green' : 'red'}">
-            Gain/Loss: ${totalGain >= 0 ? '+' : ''}₦${Math.abs(totalGain).toLocaleString(undefined, {minimumFractionDigits:2})}
-            (${totalGainPct >= 0 ? '+' : ''}${totalGainPct.toFixed(2)}%)
-        </p>
-        <p><small>Prices update every ${REFRESH_MINUTES} minutes. Last update: <span id="lastPriceUpdate">—</span></small></p>
-    `;
-    document.getElementById('lastPriceUpdate').textContent = new Date().toLocaleTimeString();
+  if (!portfolioData.length) {
+    document.getElementById('portfolioBody').innerHTML = '<tr><td colspan="8" style="color:var(--text-muted);padding:24px;">No holdings yet. <a href="/trade">Buy stocks</a> to get started.</td></tr>';
+    return;
+  }
+  let totalValue = 0, totalInvested = 0;
+  const rows = portfolioData.map(p => {
+    const livePrice = priceMap[p.stock_symbol] ?? p.current_price;
+    const currentValue = p.units * livePrice;
+    const gainLoss = currentValue - p.principal_amount;
+    const gainLossPct = p.principal_amount ? (gainLoss / p.principal_amount) * 100 : 0;
+    totalValue += currentValue; totalInvested += p.principal_amount;
+    const gl = gainLoss >= 0;
+    return `<tr>
+      <td>${p.stock_name}</td><td style="font-family:'DM Mono',monospace;font-size:13px;">${p.stock_symbol}</td>
+      <td>${p.units.toLocaleString()}</td>
+      <td>₦${p.purchase_price.toLocaleString()}</td>
+      <td>₦${livePrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td>₦${currentValue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="${gl?'gain':'loss'}">${gl?'+':''}₦${Math.abs(gainLoss).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} (${gainLossPct>=0?'+':''}${gainLossPct.toFixed(2)}%)</td>
+      <td style="font-size:12px;color:var(--text-muted);">${p.status}</td>
+    </tr>`;
+  });
+  document.getElementById('portfolioBody').innerHTML = rows.join('');
+  const totalGain = totalValue - totalInvested;
+  const totalGainPct = totalInvested ? (totalGain / totalInvested) * 100 : 0;
+  const gl = totalGain >= 0;
+  document.getElementById('portfolioSummary').innerHTML = `
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:14px;">
+      <span>Invested: <strong>₦${totalInvested.toLocaleString(undefined,{minimumFractionDigits:2})}</strong></span>
+      <span>Current Value: <strong>₦${totalValue.toLocaleString(undefined,{minimumFractionDigits:2})}</strong></span>
+      <span class="${gl?'gain':'loss'}">Gain/Loss: <strong>${gl?'+':''}₦${Math.abs(totalGain).toLocaleString(undefined,{minimumFractionDigits:2})} (${totalGainPct>=0?'+':''}${totalGainPct.toFixed(2)}%)</strong></span>
+      <span style="color:var(--text-muted);font-size:12px;">Last update: <span id="lastPriceUpdate">—</span></span>
+    </div>`;
+  document.getElementById('lastPriceUpdate').textContent = new Date().toLocaleTimeString();
 }
-
-const REFRESH_MINUTES = 15;
 
 // ── Beneficiaries ─────────────────────────────────────────────────────────────
-async function loadBeneficiaries() {
-    const data = await fetch('/dashboard/beneficiaries', {credentials:'same-origin'}).then(r=>r.json());
-    document.getElementById('totalPct').textContent = data.total_percentage.toFixed(2);
-    document.getElementById('beneficiaryList').innerHTML = data.beneficiaries.length === 0
-        ? '<p>No beneficiaries added yet.</p>'
-        : data.beneficiaries.map(b => `
-            <div>
-                <strong>${b.full_name}</strong> — ${b.bank_name} (${b.account_number}) — ${b.percentage_share}%
-                ${b.is_verified ? ' ✓ Verified' : ' ⏳ Pending'}
-                <button onclick="removeBeneficiary('${b.id}', '${b.full_name}')">Remove</button>
-            </div>
-        `).join('');
-}
-
-// Module-level state to carry resolved account details between the two steps
 let _resolvedBene = null;
 
+async function loadBeneficiaries() {
+  const data = await fetch('/dashboard/beneficiaries', {credentials:'same-origin'}).then(r=>r.json());
+  document.getElementById('totalPct').textContent = data.total_percentage.toFixed(2);
+  document.getElementById('beneficiaryList').innerHTML = data.beneficiaries.length === 0
+    ? '<p style="color:var(--text-muted);font-size:13px;">No beneficiaries added yet.</p>'
+    : data.beneficiaries.map(b => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <strong>${b.full_name}</strong> <span style="color:var(--text-muted);font-size:13px;">— ${b.bank_name} (${b.account_number})</span><br>
+          <span style="font-size:13px;color:var(--accent);">${b.percentage_share}%</span>
+          <span style="font-size:12px;margin-left:8px;" class="${b.is_verified?'gain':'pending-badge'}">${b.is_verified?'✓ Verified':'⏳ Pending'}</span>
+        </div>
+        <button class="btn-danger" onclick="removeBeneficiary('${b.id}','${b.full_name}')" style="font-size:12px;padding:6px 12px;">Remove</button>
+      </div>`).join('');
+}
+
 async function resolveBeneficiaryAccount() {
-    const bankName     = document.getElementById('beneBankName').value.trim();
-    const accountNumber = document.getElementById('beneAccNumber').value.trim();
-    const pct          = parseFloat(document.getElementById('benePct').value);
-
-    if (!bankName) {
-        showMessage('beneMsgBox', 'Please enter a bank name', true); return;
-    }
-    if (!/^\d{10}$/.test(accountNumber)) {
-        showMessage('beneMsgBox', 'Account number must be exactly 10 digits', true); return;
-    }
-    if (!pct || pct <= 0 || pct > 100) {
-        showMessage('beneMsgBox', 'Please enter a valid percentage share', true); return;
-    }
-
-    const btn = document.getElementById('beneResolveBtn');
-    btn.disabled = true;
-    btn.textContent = 'Verifying…';
-    showMessage('beneMsgBox', '');
-
-    const res = await apiPost('/dashboard/beneficiaries/resolve', {
-        bank_name: bankName,
-        account_number: accountNumber,
-        percentage_share: pct,
-        // pin / full_name not required for resolve step — send placeholders
-        // so the schema doesn't reject the request
-        pin: '000000',
-        full_name: '',
-    });
-    const json = await res.json();
-
-    btn.disabled = false;
-    btn.textContent = 'Look Up Account';
-
-    if (!res.ok) {
-        showMessage('beneMsgBox', json.detail || 'Could not verify account', true);
-        return;
-    }
-
-    // Cache resolved details for the confirm step
-    _resolvedBene = {
-        accountName:   json.accountName,
-        accountNumber: json.accountNumber,
-        bankName:      json.bankName,
-        bankCode:      json.bankCode,
-        percentageShare: pct,
-    };
-
-    // Populate and show the confirmation card
-    document.getElementById('beneConfirmName').textContent = json.accountName;
-    document.getElementById('beneConfirmBank').textContent = json.bankName;
-    document.getElementById('beneConfirmAcct').textContent = json.accountNumber;
-    document.getElementById('beneStep1').style.display = 'none';
-    document.getElementById('beneStep2').style.display = '';
-    document.getElementById('benePin').value = '';
-    document.getElementById('benePin').focus();
-    showMessage('beneConfirmMsg', '');
+  const bankName = document.getElementById('beneBankName').value.trim();
+  const accountNumber = document.getElementById('beneAccNumber').value.trim();
+  const pct = parseFloat(document.getElementById('benePct').value);
+  if (!bankName) { showMessage('beneMsgBox','Please enter a bank name',true); return; }
+  if (!/^\d{10}$/.test(accountNumber)) { showMessage('beneMsgBox','Account number must be exactly 10 digits',true); return; }
+  if (!pct || pct <= 0 || pct > 100) { showMessage('beneMsgBox','Please enter a valid percentage share',true); return; }
+  const btn = document.getElementById('beneResolveBtn');
+  btn.disabled = true; btn.textContent = 'Verifying…'; showMessage('beneMsgBox','');
+  const res = await apiPost('/dashboard/beneficiaries/resolve', { bank_name:bankName, account_number:accountNumber, percentage_share:pct, pin:'000000', full_name:'' });
+  const json = await res.json();
+  btn.disabled = false; btn.textContent = 'Look Up Account';
+  if (!res.ok) { showMessage('beneMsgBox', json.detail || 'Could not verify account', true); return; }
+  _resolvedBene = { accountName:json.accountName, accountNumber:json.accountNumber, bankName:json.bankName, bankCode:json.bankCode, percentageShare:pct };
+  document.getElementById('beneConfirmName').textContent = json.accountName;
+  document.getElementById('beneConfirmBank').textContent = json.bankName;
+  document.getElementById('beneConfirmAcct').textContent = json.accountNumber;
+  document.getElementById('beneStep1').style.display = 'none';
+  document.getElementById('beneStep2').style.display = '';
+  document.getElementById('benePin').value = '';
+  document.getElementById('benePin').focus();
+  showMessage('beneConfirmMsg','');
 }
 
 async function confirmAddBeneficiary() {
-    if (!_resolvedBene) {
-        showMessage('beneConfirmMsg', 'Something went wrong — please start over', true);
-        cancelBeneResolve(); return;
-    }
-
-    const pin = document.getElementById('benePin').value.trim();
-    if (!/^\d{6}$/.test(pin)) {
-        showMessage('beneConfirmMsg', 'Please enter your 6-digit PIN', true); return;
-    }
-
-    const btn = document.getElementById('beneConfirmBtn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    const res = await apiPost('/dashboard/beneficiaries', {
-        full_name:        _resolvedBene.accountName,
-        account_name:     _resolvedBene.accountName,   // ISW-verified name
-        bank_name:        _resolvedBene.bankName,
-        bank_code:        _resolvedBene.bankCode,
-        account_number:   _resolvedBene.accountNumber,
-        percentage_share: _resolvedBene.percentageShare,
-        pin,
-    });
-    const json = await res.json();
-
-    btn.disabled = false;
-    btn.textContent = 'Confirm & Save Beneficiary';
-
-    if (res.ok) {
-        showMessage('beneConfirmMsg', `Saved: ${json.beneficiary.full_name}`);
-        _resolvedBene = null;
-        setTimeout(() => {
-            cancelBeneResolve();
-            loadBeneficiaries();
-        }, 1200);
-    } else {
-        showMessage('beneConfirmMsg', json.detail || 'Failed to save beneficiary', true);
-    }
+  if (!_resolvedBene) { showMessage('beneConfirmMsg','Something went wrong — please start over',true); cancelBeneResolve(); return; }
+  const pin = document.getElementById('benePin').value.trim();
+  if (!/^\d{6}$/.test(pin)) { showMessage('beneConfirmMsg','Please enter your 6-digit PIN',true); return; }
+  const btn = document.getElementById('beneConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const res = await apiPost('/dashboard/beneficiaries', { full_name:_resolvedBene.accountName, account_name:_resolvedBene.accountName, bank_name:_resolvedBene.bankName, bank_code:_resolvedBene.bankCode, account_number:_resolvedBene.accountNumber, percentage_share:_resolvedBene.percentageShare, pin });
+  const json = await res.json();
+  btn.disabled = false; btn.textContent = 'Confirm & Save';
+  if (res.ok) {
+    showMessage('beneConfirmMsg', `Saved: ${json.beneficiary.full_name}`);
+    _resolvedBene = null;
+    setTimeout(() => { cancelBeneResolve(); loadBeneficiaries(); }, 1200);
+  } else { showMessage('beneConfirmMsg', json.detail || 'Failed to save beneficiary', true); }
 }
 
 function cancelBeneResolve() {
-    _resolvedBene = null;
-    document.getElementById('beneStep1').style.display = '';
-    document.getElementById('beneStep2').style.display = 'none';
-    document.getElementById('benePin').value = '';
-    showMessage('beneMsgBox', '');
-    showMessage('beneConfirmMsg', '');
+  _resolvedBene = null;
+  document.getElementById('beneStep1').style.display = '';
+  document.getElementById('beneStep2').style.display = 'none';
+  document.getElementById('benePin').value = '';
+  showMessage('beneMsgBox',''); showMessage('beneConfirmMsg','');
 }
 
 async function removeBeneficiary(id, name) {
-    const pin = prompt(`Enter your 6-digit PIN to remove "${name}":`);
-    if (!pin) return;
-    if (!/^\d{6}$/.test(pin)) { alert('PIN must be exactly 6 digits'); return; }
-
-    const res = await fetch(`/dashboard/beneficiaries/${id}`, {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/json'},
-        credentials: 'same-origin',
-        body: JSON.stringify({ pin })
-    });
-    const json = await res.json();
-    if (res.ok) {
-        showMessage('beneMsgBox', json.message || 'Beneficiary removed');
-        loadBeneficiaries();
-    } else {
-        showMessage('beneMsgBox', json.detail || 'Failed to remove', true);
-    }
+  const pin = prompt(`Enter your 6-digit PIN to remove "${name}":`);
+  if (!pin) return;
+  if (!/^\d{6}$/.test(pin)) { alert('PIN must be exactly 6 digits'); return; }
+  const res = await apiDelete(`/dashboard/beneficiaries/${id}`, { pin });
+  const json = await res.json();
+  if (res.ok) { showMessage('beneMsgBox', json.message || 'Beneficiary removed'); loadBeneficiaries(); }
+  else { showMessage('beneMsgBox', json.detail || 'Failed to remove', true); }
 }
 
 // ── DD:HH:MM:SS helpers ───────────────────────────────────────────────────────
-
-/**
- * Convert a total-seconds integer to a DD:HH:MM:SS string.
- * e.g. 90 → "00:00:01:30"
- */
 function secondsToDDHHMMSS(totalSeconds) {
-    const s = Math.max(0, Math.floor(totalSeconds));
-    const dd = Math.floor(s / 86400);
-    const hh = Math.floor((s % 86400) / 3600);
-    const mm = Math.floor((s % 3600) / 60);
-    const ss = s % 60;
-    const pad = n => String(n).padStart(2, '0');
-    return `${String(dd).padStart(2, '0')}:${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const dd = Math.floor(s / 86400), hh = Math.floor((s % 86400) / 3600);
+  const mm = Math.floor((s % 3600) / 60), ss = s % 60;
+  const pad = n => String(n).padStart(2,'0');
+  return `${String(dd).padStart(2,'0')}:${pad(hh)}:${pad(mm)}:${pad(ss)}`;
 }
-
-
 function parseDDHHMMSS(value) {
-    // Relaxed regex allows 1 or more digits per section
-    const m = value.match(/^(\d+):(\d+):(\d+):(\d+)$/);
-    if (!m) return null;
-    
-    const [, dd, hh, mm, ss] = m.map(Number);
-    
-    // Removed the strict bounds check (hh > 23 || mm > 59)
-    // Return the calculated total seconds
-    return dd * 86400 + hh * 3600 + mm * 60 + ss;
+  const m = value.match(/^(\d+):(\d+):(\d+):(\d+)$/);
+  if (!m) return null;
+  const [,dd,hh,mm,ss] = m.map(Number);
+  return dd*86400 + hh*3600 + mm*60 + ss;
 }
-
-/**
- * Validate a DD:HH:MM:SS field. Returns an error string or null if valid.
- */
 function validateDDHHMMSS(value, fieldName) {
-    const secs = parseDDHHMMSS(value);
-    if (secs === null)
-        return `${fieldName} must be in DD:HH:MM:SS format (e.g. 00:00:01:30)`;
-    if (secs < 30)
-        return `${fieldName} must be at least 00:00:00:30 (30 seconds)`;
-    return null;
+  const secs = parseDDHHMMSS(value);
+  if (secs === null) return `${fieldName} must be in DD:HH:MM:SS format`;
+  if (secs < 30) return `${fieldName} must be at least 00:00:00:30 (30 seconds)`;
+  return null;
 }
-
-/**
- * Format a duration in seconds to a compact human-readable string.
- * e.g. 90 → "1m 30s",  3661 → "1h 1m 1s",  90061 → "1d 1h 1m 1s"
- */
 function formatDuration(totalSeconds) {
-    const s = Math.max(0, Math.floor(totalSeconds));
-    const dd = Math.floor(s / 86400);
-    const hh = Math.floor((s % 86400) / 3600);
-    const mm = Math.floor((s % 3600) / 60);
-    const ss = s % 60;
-    const parts = [];
-    if (dd) parts.push(`${dd}d`);
-    if (hh) parts.push(`${hh}h`);
-    if (mm) parts.push(`${mm}m`);
-    if (ss || parts.length === 0) parts.push(`${ss}s`);
-    return parts.join(' ');
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const dd = Math.floor(s/86400), hh = Math.floor((s%86400)/3600);
+  const mm = Math.floor((s%3600)/60), ss = s%60;
+  const parts = [];
+  if (dd) parts.push(`${dd}d`); if (hh) parts.push(`${hh}h`);
+  if (mm) parts.push(`${mm}m`); if (ss || !parts.length) parts.push(`${ss}s`);
+  return parts.join(' ');
 }
 
-// ── Check-in countdown timer ──────────────────────────────────────────────────
-let _countdownTarget = null;   // Date — what we are counting down to
-let _countdownMode = null;     // 'due' | 'window' | 'grace' | 'triggered'
-let _countdownInterval = null;
-let _serverPollInterval = null; // polls server to detect disbursement trigger
-let _graceDeadline = null;      // Date — when grace period ends
+// ── Check-in countdown ────────────────────────────────────────────────────────
+let _countdownTarget=null, _countdownMode=null, _countdownInterval=null, _serverPollInterval=null, _graceDeadline=null;
 
 function startCountdown(nextDueDate, windowOpensDate, disbursementTriggered, graceDeadline) {
-    // Clear any existing tickers
-    if (_countdownInterval) clearInterval(_countdownInterval);
-    if (_serverPollInterval) clearInterval(_serverPollInterval);
+  if (_countdownInterval) clearInterval(_countdownInterval);
+  if (_serverPollInterval) clearInterval(_serverPollInterval);
+  _graceDeadline = graceDeadline;
+  const now = new Date();
+  if (disbursementTriggered) {
+    document.getElementById('countdownTimer').textContent = '✓ Disbursed';
+    document.getElementById('countdownTimer').className = 'countdown danger';
+    document.getElementById('countdownLabel').textContent = 'Disbursement has been triggered — funds sent to beneficiaries.';
+    return;
+  }
+  if (now < windowOpensDate) { _countdownTarget = windowOpensDate; _countdownMode = 'window'; }
+  else if (now < nextDueDate) { _countdownTarget = nextDueDate; _countdownMode = 'due'; }
+  else if (graceDeadline && now < graceDeadline) { _countdownTarget = graceDeadline; _countdownMode = 'grace'; }
+  else { _countdownTarget = graceDeadline || nextDueDate; _countdownMode = 'exhausted'; }
 
-    _graceDeadline = graceDeadline;
-    const now = new Date();
-
-    if (disbursementTriggered) {
-        document.getElementById('countdownTimer').textContent = '✓ Disbursed';
-        document.getElementById('countdownTimer').style.color = 'red';
-        document.getElementById('countdownLabel').textContent = 'Disbursement has been triggered — funds sent to beneficiaries.';
-        return;
+  function tick() {
+    const now = new Date(); let diffMs, label;
+    if (_countdownMode === 'window') {
+      diffMs = _countdownTarget - now; label = 'until check-in window opens';
+      if (diffMs <= 0) { _countdownMode='due'; _countdownTarget=nextDueDate; diffMs=nextDueDate-now; label='remaining until check-in is due'; document.getElementById('checkinBtn').disabled=false; document.getElementById('checkinBtn').textContent='I Am Here — Check In Now'; }
+    } else if (_countdownMode === 'due') {
+      diffMs = _countdownTarget - now; label = 'remaining until check-in is due';
+      if (diffMs <= 0) { _countdownMode = (_graceDeadline && new Date()<_graceDeadline) ? 'grace' : 'exhausted'; if (_countdownMode==='grace') _countdownTarget=_graceDeadline; }
+    } else if (_countdownMode === 'grace') {
+      diffMs = _countdownTarget - now; label = '⚠ Grace period — check in NOW to prevent disbursement';
+      if (diffMs <= 0) _countdownMode = 'exhausted';
     }
-
-    if (now < windowOpensDate) {
-        _countdownTarget = windowOpensDate;
-        _countdownMode = 'window';
-    } else if (now < nextDueDate) {
-        _countdownTarget = nextDueDate;
-        _countdownMode = 'due';
-    } else if (graceDeadline && now < graceDeadline) {
-        // Inside grace period — count down to grace deadline
-        _countdownTarget = graceDeadline;
-        _countdownMode = 'grace';
-    } else {
-        // Grace exhausted — server should trigger disbursement momentarily
-        _countdownTarget = graceDeadline || nextDueDate;
-        _countdownMode = 'exhausted';
+    if (_countdownMode === 'exhausted') {
+      document.getElementById('countdownTimer').textContent = 'Grace period exhausted';
+      document.getElementById('countdownTimer').className = 'countdown danger';
+      document.getElementById('countdownLabel').textContent = 'Disbursement is being processed…';
+      if (!_serverPollInterval) {
+        _serverPollInterval = setInterval(async () => {
+          try {
+            const d = await fetch('/dashboard/checkin',{credentials:'same-origin'}).then(r=>r.json());
+            if (d.disbursement_triggered || d.status==='triggered') {
+              clearInterval(_serverPollInterval); clearInterval(_countdownInterval);
+              document.getElementById('countdownTimer').textContent = '✓ Disbursed';
+              document.getElementById('countdownLabel').textContent = 'Disbursement complete — funds sent to beneficiaries.';
+              document.getElementById('checkinBtn').disabled=true; document.getElementById('checkinBtn').textContent='Disbursement triggered';
+            }
+          } catch(e) {}
+        }, 5000);
+      }
+      return;
     }
-
-    function tick() {
-        const now = new Date();
-        let diffMs;
-        let label;
-
-        if (_countdownMode === 'window') {
-            diffMs = _countdownTarget - now;
-            label = 'until check-in window opens';
-            if (diffMs <= 0) {
-                _countdownMode = 'due';
-                _countdownTarget = nextDueDate;
-                diffMs = nextDueDate - now;
-                label = 'remaining until check-in is due';
-                document.getElementById('checkinBtn').disabled = false;
-                document.getElementById('checkinBtn').textContent = 'I Am Here — Check In Now';
-            }
-        } else if (_countdownMode === 'due') {
-            diffMs = _countdownTarget - now;
-            label = 'remaining until check-in is due';
-            if (diffMs <= 0) {
-                if (_graceDeadline && new Date() < _graceDeadline) {
-                    _countdownMode = 'grace';
-                    _countdownTarget = _graceDeadline;
-                } else {
-                    _countdownMode = 'exhausted';
-                }
-            }
-        } else if (_countdownMode === 'grace') {
-            diffMs = _countdownTarget - now;
-            label = '⚠ Grace period — check in NOW to prevent disbursement';
-            if (diffMs <= 0) {
-                _countdownMode = 'exhausted';
-            }
-        }
-
-        if (_countdownMode === 'exhausted') {
-            document.getElementById('countdownTimer').textContent = 'Grace period exhausted';
-            document.getElementById('countdownTimer').style.color = 'red';
-            document.getElementById('countdownLabel').textContent = 'Disbursement is being processed…';
-            // Poll server every 5s until disbursement is confirmed
-            if (!_serverPollInterval) {
-                _serverPollInterval = setInterval(async () => {
-                    try {
-                        const d = await fetch('/dashboard/checkin', {credentials:'same-origin'}).then(r=>r.json());
-                        if (d.disbursement_triggered || d.status === 'triggered') {
-                            clearInterval(_serverPollInterval);
-                            _serverPollInterval = null;
-                            clearInterval(_countdownInterval);
-                            _countdownInterval = null;
-                            document.getElementById('countdownTimer').textContent = '✓ Disbursed';
-                            document.getElementById('countdownLabel').textContent = 'Disbursement complete — funds sent to beneficiaries.';
-                            document.getElementById('checkinStatus').innerHTML += '<p style="color:red"><strong>⚠ Disbursement has been triggered</strong></p>';
-                            document.getElementById('checkinBtn').disabled = true;
-                            document.getElementById('checkinBtn').textContent = 'Disbursement triggered — check-in unavailable';
-                        }
-                    } catch(e) { /* ignore poll errors */ }
-                }, 5000);
-            }
-            return;
-        }
-
-        const totalSeconds = Math.floor(Math.abs(diffMs) / 1000);
-        const days    = Math.floor(totalSeconds / 86400);
-        const hours   = Math.floor((totalSeconds % 86400) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        const pad = n => String(n).padStart(2, '0');
-        const display = `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-
-        document.getElementById('countdownTimer').textContent = display;
-        document.getElementById('countdownLabel').textContent = label;
-
-        // Colour coding
-        const timerEl = document.getElementById('countdownTimer');
-        if (_countdownMode === 'grace') {
-            timerEl.style.color = 'red';
-        } else if (_countdownMode === 'due' && days < 7) {
-            timerEl.style.color = 'orange';
-        } else {
-            timerEl.style.color = 'green';
-        }
-    }
-
-    tick();
-    _countdownInterval = setInterval(tick, 1000);
+    const totalSec = Math.floor(Math.abs(diffMs)/1000);
+    const days=Math.floor(totalSec/86400), hours=Math.floor((totalSec%86400)/3600);
+    const minutes=Math.floor((totalSec%3600)/60), seconds=totalSec%60;
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('countdownTimer').textContent = `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+    document.getElementById('countdownLabel').textContent = label;
+    const timerEl = document.getElementById('countdownTimer');
+    timerEl.className = 'countdown' + (_countdownMode==='grace'?' danger':(_countdownMode==='due'&&days<7?' warn':''));
+  }
+  tick(); _countdownInterval = setInterval(tick, 1000);
 }
 
 async function loadCheckin() {
-    const data = await fetch('/dashboard/checkin', {credentials:'same-origin'}).then(r=>r.json());
-    if (data.status === 'pending') {
-        document.getElementById('checkinStatus').innerHTML = 
-            '<p>Status: <strong style="color:blue">Initial Setup Required</strong></p>';
-        document.getElementById('countdownTimer').textContent = "00d 00h 00m 00s";
-        document.getElementById('countdownLabel').textContent = "Timer will start once you save settings below.";
-        return;
-    }
-
-    // Populate settings fields as DD:HH:MM:SS
-    document.getElementById('checkinInterval').value = secondsToDDHHMMSS(data.checkin_interval_seconds ?? (data.checkin_interval_days * 86400));
-    document.getElementById('gracePeriod').value = secondsToDDHHMMSS(data.grace_period_seconds ?? (data.grace_period_days * 86400));
-
-    const nextDue = new Date(data.next_due_date);
-    const lastCheckin = new Date(data.last_checkin_date);
-    const now = new Date();
-
-    // Check-in window opens at 10 % before due (at least 30 s before)
-    const intervalSec = data.checkin_interval_seconds ?? (data.checkin_interval_days * 86400);
-    const earlyWindowSec = Math.max(30, intervalSec * 0.10);
-    const windowOpens = new Date(nextDue.getTime() - earlyWindowSec * 1000);
-    const canCheckIn = now >= windowOpens && !data.disbursement_triggered;
-
-    const btn = document.getElementById('checkinBtn');
-    if (canCheckIn) {
-        btn.disabled = false;
-        btn.textContent = 'I Am Here — Check In Now';
-        btn.title = '';
-    } else {
-        btn.disabled = true;
-        if (data.disbursement_triggered) {
-            btn.textContent = 'Disbursement triggered — check-in unavailable';
-        } else {
-            const secUntilWindow = Math.ceil((windowOpens - now) / 1000);
-            btn.textContent = `Check-in available in ${formatDuration(secUntilWindow)}`;
-        }
-        btn.title = `Check-in window opens on ${windowOpens.toLocaleString()}`;
-    }
-
-    const graceSec = data.grace_period_seconds ?? (data.grace_period_days * 86400);
-    document.getElementById('checkinStatus').innerHTML = `
-        <p>Status: <strong>${data.status}</strong></p>
-        <p>Last Check-In: <strong>${lastCheckin.toLocaleString()}</strong></p>
-        <p>Next Due: <strong>${nextDue.toLocaleString()}</strong></p>
-        <p>Check-In Window Opens: <strong>${windowOpens.toLocaleString()}</strong>
-            <small>(${formatDuration(earlyWindowSec)} before due date)</small></p>
-        <p>Grace Period: <strong>${secondsToDDHHMMSS(graceSec)}</strong>
-            <small>(${formatDuration(graceSec)} after due date before disbursement)</small></p>
-        ${data.grace_deadline ? `<p>Grace Deadline: <strong>${new Date(data.grace_deadline).toLocaleString()}</strong></p>` : ''}
-        ${data.disbursement_triggered ? '<p style="color:red"><strong>⚠ Disbursement has been triggered — funds sent to beneficiaries</strong></p>' : ''}
-    `;
-
-    // Start the live countdown ticker
-    const graceDeadline = data.grace_deadline ? new Date(data.grace_deadline) : null;
-    startCountdown(nextDue, windowOpens, data.disbursement_triggered, graceDeadline);
+  const data = await fetch('/dashboard/checkin',{credentials:'same-origin'}).then(r=>r.json());
+  if (data.status === 'pending') {
+    document.getElementById('checkinStatus').innerHTML = '<p>Status: <strong style="color:var(--accent2)">Initial Setup Required</strong></p>';
+    document.getElementById('countdownTimer').textContent = '00d 00h 00m 00s';
+    document.getElementById('countdownLabel').textContent = 'Timer will start once you save settings below.';
+    return;
+  }
+  document.getElementById('checkinInterval').value = secondsToDDHHMMSS(data.checkin_interval_seconds ?? (data.checkin_interval_days*86400));
+  document.getElementById('gracePeriod').value = secondsToDDHHMMSS(data.grace_period_seconds ?? (data.grace_period_days*86400));
+  const nextDue=new Date(data.next_due_date), lastCheckin=new Date(data.last_checkin_date), now=new Date();
+  const intervalSec=data.checkin_interval_seconds ?? (data.checkin_interval_days*86400);
+  const earlyWindowSec=Math.max(30,intervalSec*0.10);
+  const windowOpens=new Date(nextDue.getTime()-earlyWindowSec*1000);
+  const canCheckIn=now>=windowOpens && !data.disbursement_triggered;
+  const btn=document.getElementById('checkinBtn');
+  if (canCheckIn) { btn.disabled=false; btn.textContent='I Am Here — Check In Now'; btn.title=''; }
+  else {
+    btn.disabled=true;
+    btn.textContent = data.disbursement_triggered ? 'Disbursement triggered — check-in unavailable' : `Check-in available in ${formatDuration(Math.ceil((windowOpens-now)/1000))}`;
+  }
+  const graceSec=data.grace_period_seconds ?? (data.grace_period_days*86400);
+  document.getElementById('checkinStatus').innerHTML = `
+    <p>Status: <strong>${data.status}</strong></p>
+    <p>Last Check-In: <strong>${lastCheckin.toLocaleString()}</strong></p>
+    <p>Next Due: <strong>${nextDue.toLocaleString()}</strong></p>
+    <p>Grace Period: <strong>${secondsToDDHHMMSS(graceSec)}</strong></p>
+    ${data.grace_deadline ? `<p>Grace Deadline: <strong>${new Date(data.grace_deadline).toLocaleString()}</strong></p>` : ''}
+    ${data.disbursement_triggered ? '<p style="color:var(--red);margin-top:8px;"><strong>⚠ Disbursement has been triggered</strong></p>' : ''}`;
+  startCountdown(nextDue, windowOpens, data.disbursement_triggered, data.grace_deadline?new Date(data.grace_deadline):null);
 }
 
 async function doCheckin() {
-    const btn = document.getElementById('checkinBtn');
-    btn.disabled = true;
-    btn.textContent = 'Recording check-in...';
-    const res = await apiPost('/dashboard/checkin', {});
-    const json = await res.json();
-    if (res.ok) {
-        showMessage('checkinMsg', `Checked in! Next due: ${new Date(json.next_due_date).toLocaleDateString()}`);
-        await loadCheckin();  // re-evaluates button disabled state
-    } else {
-        showMessage('checkinMsg', json.detail || 'Check-in failed', true);
-        btn.disabled = false;
-        btn.textContent = 'I Am Here — Check In Now';
-    }
+  const btn=document.getElementById('checkinBtn'); btn.disabled=true; btn.textContent='Recording…';
+  const res=await apiPost('/dashboard/checkin',{});
+  const json=await res.json();
+  if (res.ok) { showMessage('checkinMsg',`Checked in! Next due: ${new Date(json.next_due_date).toLocaleDateString()}`); await loadCheckin(); }
+  else { showMessage('checkinMsg',json.detail||'Check-in failed',true); btn.disabled=false; btn.textContent='I Am Here — Check In Now'; }
 }
 
 async function updateCheckinConfig() {
-    const pin = document.getElementById('checkinSettingsPin').value.trim();
-    if (!pin || pin.length !== 6 || !/^[0-9]{6}$/.test(pin)) {
-        showMessage('checkinConfigMsg', 'Please enter your 6-digit PIN to save settings', true);
-        return;
-    }
-    const intervalVal = document.getElementById('checkinInterval').value.trim();
-    const graceVal    = document.getElementById('gracePeriod').value.trim();
-
-    const intervalErr = validateDDHHMMSS(intervalVal, 'Check-in interval');
-    if (intervalErr) { showMessage('checkinConfigMsg', intervalErr, true); return; }
-    const graceErr = validateDDHHMMSS(graceVal, 'Grace period');
-    if (graceErr) { showMessage('checkinConfigMsg', graceErr, true); return; }
-
-    const data = {
-        checkin_interval: intervalVal,
-        grace_period: graceVal,
-        pin,
-    };
-    const res = await apiPut('/dashboard/checkin/config', data);
-    const json = await res.json();
-    if (res.ok) {
-        showMessage('checkinConfigMsg', 'Settings saved!');
-        document.getElementById('checkinSettingsPin').value = '';
-        loadCheckin();
-    } else {
-        showMessage('checkinConfigMsg', json.detail || 'Failed', true);
-    }
+  const pin=document.getElementById('checkinSettingsPin').value.trim();
+  if (!pin||pin.length!==6||!/^[0-9]{6}$/.test(pin)) { showMessage('checkinConfigMsg','Please enter your 6-digit PIN',true); return; }
+  const intervalVal=document.getElementById('checkinInterval').value.trim();
+  const graceVal=document.getElementById('gracePeriod').value.trim();
+  const ie=validateDDHHMMSS(intervalVal,'Check-in interval'); if(ie){showMessage('checkinConfigMsg',ie,true);return;}
+  const ge=validateDDHHMMSS(graceVal,'Grace period'); if(ge){showMessage('checkinConfigMsg',ge,true);return;}
+  const res=await apiPut('/dashboard/checkin/config',{checkin_interval:intervalVal,grace_period:graceVal,pin});
+  const json=await res.json();
+  if (res.ok) { showMessage('checkinConfigMsg','Settings saved!'); document.getElementById('checkinSettingsPin').value=''; loadCheckin(); }
+  else { showMessage('checkinConfigMsg',json.detail||'Failed',true); }
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 async function loadSettings() {
-    const profile = await fetch('/dashboard/profile', {credentials:'same-origin'}).then(r=>r.json());
-
-    // Slot 1
-    if (profile.backup_email) {
-        document.getElementById('backupEmail1').value = profile.backup_email;
-        if (profile.is_backup_email_verified) {
-            document.getElementById('slot1Status').innerHTML = `<p>✓ ${profile.backup_email} — Verified</p>`;
-            document.getElementById('slot1AddForm').style.display = 'none';
-        } else {
-            document.getElementById('slot1Status').innerHTML = `<p>⏳ ${profile.backup_email} — Not verified</p>`;
-            document.getElementById('slot1OtpSection').style.display = '';
-        }
-    } else {
-        document.getElementById('slot1Status').innerHTML = '<p>Not set</p>';
-    }
-
-    // Slot 2 — only unlock if slot 1 is verified
+  const profile=await fetch('/dashboard/profile',{credentials:'same-origin'}).then(r=>r.json());
+  if (profile.backup_email) {
+    document.getElementById('backupEmail1').value=profile.backup_email;
     if (profile.is_backup_email_verified) {
-        document.getElementById('slot2Locked').style.display = 'none';
-        document.getElementById('slot2Content').style.display = '';
-
-        if (profile.backup_email_2) {
-            document.getElementById('backupEmail2').value = profile.backup_email_2;
-            if (profile.is_backup_email_2_verified) {
-                document.getElementById('slot2Status').innerHTML = `<p>✓ ${profile.backup_email_2} — Verified</p>`;
-                document.getElementById('slot2AddForm').style.display = 'none';
-            } else {
-                document.getElementById('slot2Status').innerHTML = `<p>⏳ ${profile.backup_email_2} — Not verified</p>`;
-                document.getElementById('slot2OtpSection').style.display = '';
-            }
-        } else {
-            document.getElementById('slot2Status').innerHTML = '<p>Not set</p>';
-        }
+      document.getElementById('slot1Status').innerHTML=`<p class="verified-badge">✓ ${profile.backup_email} — Verified</p>`;
+      document.getElementById('slot1AddForm').style.display='none';
+    } else {
+      document.getElementById('slot1Status').innerHTML=`<p class="pending-badge">⏳ ${profile.backup_email} — Not verified</p>`;
+      document.getElementById('slot1OtpSection').style.display='';
     }
+  } else { document.getElementById('slot1Status').innerHTML='<p style="color:var(--text-muted);font-size:13px;">Not set</p>'; }
+  if (profile.is_backup_email_verified) {
+    document.getElementById('slot2Locked').style.display='none';
+    document.getElementById('slot2Content').style.display='';
+    if (profile.backup_email_2) {
+      document.getElementById('backupEmail2').value=profile.backup_email_2;
+      if (profile.is_backup_email_2_verified) {
+        document.getElementById('slot2Status').innerHTML=`<p class="verified-badge">✓ ${profile.backup_email_2} — Verified</p>`;
+        document.getElementById('slot2AddForm').style.display='none';
+      } else {
+        document.getElementById('slot2Status').innerHTML=`<p class="pending-badge">⏳ ${profile.backup_email_2} — Not verified</p>`;
+        document.getElementById('slot2OtpSection').style.display='';
+      }
+    } else { document.getElementById('slot2Status').innerHTML='<p style="color:var(--text-muted);font-size:13px;">Not set</p>'; }
+  }
 }
 
 async function setBackupEmail(slot) {
-    const email = document.getElementById(`backupEmail${slot}`).value.trim();
-    if (!email) { showMessage(`backupMsg${slot}`, 'Please enter an email', true); return; }
-    const res = await apiPost('/dashboard/backup-email', { backup_email: email, slot });
-    const json = await res.json();
-    if (res.ok) {
-        showMessage(`backupMsg${slot}`, json.message || 'OTP sent');
-        document.getElementById(`slot${slot}OtpSection`).style.display = '';
-    } else {
-        showMessage(`backupMsg${slot}`, json.detail || 'Failed', true);
-    }
+  const email=document.getElementById(`backupEmail${slot}`).value.trim();
+  if (!email) { showMessage(`backupMsg${slot}`,'Please enter an email',true); return; }
+  const res=await apiPost('/dashboard/backup-email',{backup_email:email,slot});
+  const json=await res.json();
+  if (res.ok) { showMessage(`backupMsg${slot}`,json.message||'OTP sent'); document.getElementById(`slot${slot}OtpSection`).style.display=''; }
+  else { showMessage(`backupMsg${slot}`,json.detail||'Failed',true); }
 }
 
 async function verifyBackupEmail(slot) {
-    const otp = document.getElementById(`backupOtp${slot}`).value.trim();
-    const pin = document.getElementById(`backupVerifyPin${slot}`).value.trim();
-    if (!pin || pin.length !== 6) {
-        showMessage(`backupMsg${slot}`, 'Please enter your 6-digit PIN', true);
-        return;
-    }
-    const res = await apiPost('/dashboard/backup-email/verify', { otp, pin, slot });
-    const json = await res.json();
-    if (res.ok) {
-        showMessage(`backupMsg${slot}`, json.message || 'Verified!');
-        setTimeout(() => loadSettings(), 1500);
-    } else {
-        showMessage(`backupMsg${slot}`, json.detail || 'Verification failed', true);
-    }
+  const otp=document.getElementById(`backupOtp${slot}`).value.trim();
+  const pin=document.getElementById(`backupVerifyPin${slot}`).value.trim();
+  if (!pin||pin.length!==6) { showMessage(`backupMsg${slot}`,'Please enter your 6-digit PIN',true); return; }
+  const res=await apiPost('/dashboard/backup-email/verify',{otp,pin,slot});
+  const json=await res.json();
+  if (res.ok) { showMessage(`backupMsg${slot}`,json.message||'Verified!'); setTimeout(()=>loadSettings(),1500); }
+  else { showMessage(`backupMsg${slot}`,json.detail||'Verification failed',true); }
 }
 
 // ── PIN Setup ─────────────────────────────────────────────────────────────────
 async function requestPinOtp() {
-    const btn = document.getElementById('sendOtpBtn');
-    btn.disabled = true; btn.textContent = 'Sending...';
-    const res = await apiPost('/dashboard/request-pin-otp', {});
-    const json = await res.json();
-    if (res.ok) {
-        showMessage('pinOtpMsg', json.message || 'OTP sent to your email');
-        document.getElementById('pinFormDiv').style.display = '';
-    } else {
-        showMessage('pinOtpMsg', json.detail || 'Failed to send OTP', true);
-    }
-    btn.disabled = false; btn.textContent = 'Send OTP to My Email';
+  const btn=document.getElementById('sendOtpBtn'); btn.disabled=true; btn.textContent='Sending…';
+  const res=await apiPost('/dashboard/request-pin-otp',{});
+  const json=await res.json();
+  if (res.ok) { showMessage('pinOtpMsg',json.message||'OTP sent to your email'); document.getElementById('pinFormDiv').style.display=''; }
+  else { showMessage('pinOtpMsg',json.detail||'Failed to send OTP',true); }
+  btn.disabled=false; btn.textContent='Send OTP to My Email';
 }
 
 async function submitPin() {
-    const otp = document.getElementById('pinOtp').value.trim();
-    const pin = document.getElementById('newPin').value.trim();
-    const confirmPin = document.getElementById('confirmPin').value.trim();
-
-    if (pin !== confirmPin) { showMessage('pinSetMsg', 'PINs do not match', true); return; }
-    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) { showMessage('pinSetMsg', 'PIN must be exactly 6 digits', true); return; }
-
-    const res = await apiPost('/dashboard/setup-pin', { otp, pin, confirm_pin: confirmPin });
-    const json = await res.json();
-    if (res.ok) {
-        showMessage('pinSetMsg', 'PIN set successfully!');
-        // Hide modal permanently — token has been refreshed by server
-        setTimeout(() => {
-            document.getElementById('pinSetupModal').style.display = 'none';
-        }, 1500);
-    } else {
-        showMessage('pinSetMsg', json.detail || 'Failed', true);
-    }
+  const otp=document.getElementById('pinOtp').value.trim();
+  const pin=document.getElementById('newPin').value.trim();
+  const confirmPin=document.getElementById('confirmPin').value.trim();
+  if (pin!==confirmPin) { showMessage('pinSetMsg','PINs do not match',true); return; }
+  if (pin.length!==6||!/^\d{6}$/.test(pin)) { showMessage('pinSetMsg','PIN must be exactly 6 digits',true); return; }
+  const res=await apiPost('/dashboard/setup-pin',{otp,pin,confirm_pin:confirmPin});
+  const json=await res.json();
+  if (res.ok) { showMessage('pinSetMsg','PIN set successfully!'); setTimeout(()=>{ document.getElementById('pinSetupModal').classList.remove('open'); },1500); }
+  else { showMessage('pinSetMsg',json.detail||'Failed',true); }
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────
 async function doLogout() {
-    await apiPost('/logout', {});
-    window.location.href = '/login';
+  await apiPost('/logout',{});
+  window.location.href='/login';
 }
 </script>
-{% endblock %}
+</body>
+</html>

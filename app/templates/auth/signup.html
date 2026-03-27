@@ -1,76 +1,111 @@
-{% extends "base.html" %}
-{% block title %}Sign Up — Legacy Portal{% endblock %}
-
-{% block body %}
-<h1>Legacy Portal— Create Account</h1>
-<p>Protect your investments. Ensure your loved ones can claim what is theirs.</p>
-
-<form id="signupForm">
-    <div>
-        <label for="first_name">First Name</label>
-        <input type="text" id="first_name" name="first_name" required>
-    </div>
-    <div>
-        <label for="last_name">Last Name</label>
-        <input type="text" id="last_name" name="last_name" required>
-    </div>
-    <div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — Legacy Portal</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+    :root {
+      --bg: #0d0f12; --surface: #161a1f; --surface2: #1e242b;
+      --border: #2a3140; --accent: #c8a96e; --text: #e8eaf0;
+      --text-muted: #7a8494; --red: #e05c5c; --green: #5cb87a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 0; }
+    .wrap { width: 100%; max-width: 460px; padding: 24px; }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); margin-bottom: 8px; }
+    .sub { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; }
+    h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 24px; font-weight: 400; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;
+      font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    input { background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 11px 14px; border-radius: 7px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; width: 100%; outline: none; transition: border-color .2s; }
+    input:focus { border-color: var(--accent); }
+    button { background: var(--accent); color: #0d0f12; border: none; padding: 12px;
+      border-radius: 7px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 14px; cursor: pointer; transition: opacity .2s; width: 100%; margin-top: 6px; }
+    button:hover { opacity: .85; } button:disabled { opacity: .45; cursor: not-allowed; }
+    .links { margin-top: 20px; font-size: 13px; color: var(--text-muted); text-align: center; }
+    .links a { color: var(--accent); }
+    .msg { margin-top: 12px; font-size: 13px; min-height: 18px; text-align: center; }
+    .msg.error { color: var(--red); } .msg.ok { color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">Legacy Portal</div>
+    <div class="sub">Protect your investments. Ensure your loved ones can claim what is theirs.</div>
+    <div class="card">
+      <h2>Create Account</h2>
+      <div class="row">
+        <div class="form-group">
+          <label for="first_name">First Name</label>
+          <input type="text" id="first_name" placeholder="Ada" required>
+        </div>
+        <div class="form-group">
+          <label for="last_name">Last Name</label>
+          <input type="text" id="last_name" placeholder="Obi" required>
+        </div>
+      </div>
+      <div class="form-group">
         <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" required>
-    </div>
-    <div>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
         <label for="phone_number">Phone Number</label>
-        <input type="tel" id="phone_number" name="phone_number" placeholder="+2348012345678" required>
-    </div>
-    <div>
-        <label for="password">Password (min 8 characters)</label>
-        <input type="password" id="password" name="password" required minlength="8">
-    </div>
-    <div>
+        <input type="tel" id="phone_number" placeholder="+2348012345678" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password <span style="color:var(--text-muted);font-weight:400">(min 8 characters)</span></label>
+        <input type="password" id="password" placeholder="••••••••" required minlength="8">
+      </div>
+      <div class="form-group">
         <label for="confirm_password">Confirm Password</label>
-        <input type="password" id="confirm_password" name="confirm_password" required>
+        <input type="password" id="confirm_password" placeholder="••••••••" required>
+      </div>
+      <button id="submitBtn">Create Account</button>
+      <div id="msgBox" class="msg"></div>
     </div>
-    <button type="submit" id="submitBtn">Create Account</button>
-    <p id="msgBox"></p>
-</form>
+    <div class="links" style="margin-top:20px;">
+      Already have an account? <a href="/login">Log in</a>
+    </div>
+  </div>
 
-<p>Already have an account? <a href="/login">Log in</a></p>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.getElementById('signupForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true; btn.textContent = 'Creating account...';
-
-    const data = {
+  <script>
+    async function apiPost(url, data) {
+      return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(data) });
+    }
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('submitBtn');
+      const msgBox = document.getElementById('msgBox');
+      const data = {
         first_name: document.getElementById('first_name').value.trim(),
         last_name: document.getElementById('last_name').value.trim(),
         email: document.getElementById('email').value.trim(),
         phone_number: document.getElementById('phone_number').value.trim(),
         password: document.getElementById('password').value,
         confirm_password: document.getElementById('confirm_password').value,
-    };
-
-    if (data.password !== data.confirm_password) {
-        showMessage('msgBox', 'Passwords do not match', true);
+      };
+      if (data.password !== data.confirm_password) {
+        msgBox.textContent = 'Passwords do not match'; msgBox.className = 'msg error'; return;
+      }
+      btn.disabled = true; btn.textContent = 'Creating account…';
+      const res = await apiPost('/signup', data);
+      const json = await res.json();
+      if (res.ok) {
+        msgBox.textContent = json.message || 'Account created! Check your email.'; msgBox.className = 'msg ok';
+        setTimeout(() => window.location.href = `/verify-email?email=${encodeURIComponent(data.email)}`, 2000);
+      } else {
+        msgBox.textContent = json.detail || 'Registration failed'; msgBox.className = 'msg error';
         btn.disabled = false; btn.textContent = 'Create Account';
-        return;
-    }
-
-    const res = await apiPost('/signup', data);
-    const json = await res.json();
-
-    if (res.ok) {
-        showMessage('msgBox', json.message || 'Account created! Check your email.');
-        setTimeout(() => {
-            window.location.href = `/verify-email?email=${encodeURIComponent(data.email)}`;
-        }, 2000);
-    } else {
-        showMessage('msgBox', json.detail || 'Registration failed', true);
-        btn.disabled = false; btn.textContent = 'Create Account';
-    }
-});
-</script>
-{% endblock %}
+      }
+    });
+  </script>
+</body>
+</html>
